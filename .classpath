@@ -136,6 +136,6 @@
 	<classpathentry kind="var" path="M2_REPO/org/spark-project/pyrolite/2.0.1/pyrolite-2.0.1.jar"/>
 	<classpathentry kind="var" path="M2_REPO/net/sf/py4j/py4j/0.8.2.1/py4j-0.8.2.1.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/apache/spark/spark-streaming_2.10/1.5.0/spark-streaming_2.10-1.5.0.jar"/>
-	<classpathentry kind="lib" path="/home/lee/workspace/RPHash/RPHash.jar"/>
+	<classpathentry kind="lib" path="/home/lee/workspace/rphash-spark/lib/RPHash.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
