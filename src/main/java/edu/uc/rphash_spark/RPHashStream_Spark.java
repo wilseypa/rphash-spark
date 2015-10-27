@@ -1,20 +1,28 @@
-package edu.uc.rphash_spark;
+package edu.uc.rphash;
 
-import org.apache.spark.SparkConf;
-import org.apache.spark.api.java.StorageLevels;
-import org.apache.spark.api.java.function.FlatMapFunction;
-import org.apache.spark.api.java.function.Function2;
-import org.apache.spark.api.java.function.PairFunction;
-import org.apache.spark.streaming.Durations;
-import org.apache.spark.streaming.api.java.JavaDStream;
-import org.apache.spark.streaming.api.java.JavaPairDStream;
-import org.apache.spark.streaming.api.java.JavaReceiverInputDStream;
-import org.apache.spark.streaming.api.java.JavaStreamingContext;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Random;
 
-import scala.Tuple2;
-import com.google.common.collect.Lists;
-import java.util.regex.Pattern;
-
+import edu.uc.rphash.Readers.RPHashObject;
+import edu.uc.rphash.Readers.SimpleArrayReader;
+import edu.uc.rphash.decoders.Decoder;
+import edu.uc.rphash.frequentItemSet.KHHCentroidCounter;
+//import edu.uc.rphash.frequentItemSet.KHHCountMinSketch.Tuple;
+import edu.uc.rphash.lsh.LSH;
+import edu.uc.rphash.projections.DBFriendlyProjection;
+import edu.uc.rphash.projections.Projector;
+import edu.uc.rphash.standardhash.HashAlgorithm;
+import edu.uc.rphash.standardhash.MurmurHash;
+import edu.uc.rphash.tests.ClusterGenerator;
+import edu.uc.rphash.tests.GenerateData;
+import edu.uc.rphash.tests.GenerateStreamData;
+import edu.uc.rphash.tests.Kmeans;
+import edu.uc.rphash.tests.StatTests;
+import edu.uc.rphash.tests.StreamingKmeans;
+import edu.uc.rphash.tests.TestUtil;
 
 public class RPHashStream implements StreamClusterer {
 	private float variance;
@@ -27,9 +35,9 @@ public class RPHashStream implements StreamClusterer {
 	@Override
 	public synchronized long addVectorOnlineStep(float[] vec) {
 		long hash[];
-		Centroid c = new Centroid(vec);
+		Centroid c = new Centroid(vec); //Create a centroid as new vectors keep coming from the DStream
 		
-		float tmpvar = vartracker.updateVarianceSample(vec);
+		float tmpvar = vartracker.updateVarianceSample(vec); //Set tmpvar as each vector is passed to the method 'updateVarianceSample'
 		if(variance!=tmpvar){
 			for (LSH lshfunc : lshfuncs) 
 				lshfunc.updateDecoderVariance(tmpvar);
@@ -37,7 +45,7 @@ public class RPHashStream implements StreamClusterer {
 		}
 		for (LSH lshfunc : lshfuncs) 
 		{
-			hash = lshfunc.lshHashRadiusNo2Hash(vec, so.getNumBlur());
+			hash = lshfunc.lshHashRadiusNo2Hash(vec, so.getNumBlur()); //
 			for (long h : hash)
 				c.addID(h);
 		}
@@ -80,8 +88,8 @@ public class RPHashStream implements StreamClusterer {
 
 	public RPHashStream(List<float[]> data, int k) {
 
-		variance = StatTests.varianceSample(data, .01f);
-		so = new SimpleArrayReader(data, k);
+		variance = StatTests.varianceSample(data, .01f); //Get variance. Uses total no. of elements in the DStream
+		so = new SimpleArrayReader(data, k);  //Set parameters of RPHash. Uses dimension of DStream
 		init();
 	}
 
@@ -138,9 +146,9 @@ public class RPHashStream implements StreamClusterer {
 
 	public void run() {
 		// add to frequent itemset the hashed Decoded randomly projected vector
-		Iterator<float[]> vecs = so.getVectorIterator();
+		Iterator<float[]> vecs = so.getVectorIterator(); //DStream...
 		while (vecs.hasNext()) {
-			addVectorOnlineStep(vecs.next());
+			addVectorOnlineStep(vecs.next()); //vecs.next returns the next vector from DStream
 		}
 	}
 
@@ -154,12 +162,12 @@ public class RPHashStream implements StreamClusterer {
 		int d = 100;
 		int n = 20000;
 		float var = .75f;
-		// Create a local StreamingContext with four working threads and batch interval of 2 second
-		SparkConf conf = new SparkConf().setMaster("local[4]").setAppName("StreamingRPHash_Spark")
-		JavaStreamingContext jssc = new JavaStreamingContext(conf, Durations.seconds(2))
-		JavaReceiverInputDStream<List> vectors = jssc.socketTextStream("localhost", 9999)
-		RPHashStream rphit = new RPHashStream(vectors, k);
-		long startTime = System.nanoTime();
+		for (float f = (float)d; f < 100000f; f*=1.5f) {
+			for (int i = 0; i < 1; i++) {
+				GenerateData gen = new GenerateData(k, n / k, (int)f, var, true, 1f);  //Input DStream
+				//StreamingKmeans rphit = new StreamingKmeans(gen.data(), k);
+				RPHashStream rphit = new RPHashStream(gen.getData(), k);  //Set variance and parameters of RPHash. Initialize counter, LSH and projection matrices.
+				long startTime = System.nanoTime();
 				rphit.getCentroids();
 				long duration = (System.nanoTime() - startTime);
 				
@@ -218,8 +226,6 @@ public class RPHashStream implements StreamClusterer {
 				timestart = System.nanoTime();
 			}
 		}
-		jssc.start();
-		jssc.awaitTermination();
 	}
 
 	@Override
