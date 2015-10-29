@@ -68,7 +68,7 @@ public class Spherical implements Decoder {
 	@Override
 	public long[] decode(float[] f) {  //Input a projected vector
 //		byte[] lg = new byte[this.l * 8];
-		long[] dec = Hash(TestUtil.normalize(f));
+		long[] dec = Hash(TestUtil.normalize(f));   //Normalize the projected vector and hash it. A long array is returned and stored in 'dec'.
 //		int ct = 0;
 //		for (long d:dec) {
 //			lg[ct++] = (byte)(d >>> 56);
@@ -94,12 +94,12 @@ public class Spherical implements Decoder {
 		return distance;
 	}
 
-	long argmaxi(float[] p, List<float[]> vs) {
+	long argmaxi(float[] p, List<float[]> vs) {       //Input a normalized projected vector p (and list vs)
 		long maxi = 0;
 		float max = 0;
 
 		for (int i = 0; i < this.d; i++) {
-			float dot = dot(p, vs.get(i));
+			float dot = dot(p, vs.get(i));   //float dot stores the dot product of p and an element of list vs 
 
 			float abs = dot >= 0 ? dot : -dot;
 			if (abs < max) {
@@ -127,12 +127,12 @@ public class Spherical implements Decoder {
 		return t;
 	}
 
-	float dot(float[] t, float[] u) {
+	float dot(float[] t, float[] u) {      //Input a normalized projected vector t (and an element of the list vs, which is a float array)
 		float s = 0;
-		for (int i = 0; i < t.length; i++) {
-			s += t[i] * u[i];
+		for (int i = 0; i < t.length; i++) {     //Use the length of the normalized projected vector t
+			s += t[i] * u[i];      //Multiply each element of t with the corresponding element of u and sum them
 		}
-		return s;
+		return s;    //Return the dot product of t and u
 	}
 
 	float[] sub(float[] t, float[] u) {
@@ -184,7 +184,7 @@ public class Spherical implements Decoder {
 	// is required to take the normalization into account.
 	//
 	// The complexity of this function is O(nL)
-	long[] Hash(float[] p) {
+	long[] Hash(float[] p) {       //Input a normalized projected vector.
 		int ri = 0;
 		long h;
 		//if(variance!=1f)p = scale(p,variance);
@@ -193,7 +193,7 @@ public class Spherical implements Decoder {
 			g[i] = 0;
 			for (int j = 0; j < this.k; j++) {
 				List<float[]> vs = this.vAll.get(ri);
-				h = this.argmaxi(p, vs);
+				h = this.argmaxi(p, vs);   //'argmaxi' takes the normalized projected vector p (and list vs) and returns a long value
 				g[i] |= (h << (this.hbits * j));
 				ri++;
 			}

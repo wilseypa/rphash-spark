@@ -108,26 +108,26 @@ public class LSH
 		 if(this.noise==null){
 			 genNoiseTable(r.length,times);  //Pass length of each vector to method 'genNoiseTable'.
 		 }
-	     float[] pr_r = p[0].project(r);  //Takes a vector as input and returns a projected vector
-	     long[] nonoise = dec.decode(pr_r);  //Takes a projected vector as input 
-	     long[] ret = new long[times*nonoise.length];
+	     float[] pr_r = p[0].project(r);  //Takes a vector as input and returns a projected vector.
+	     long[] nonoise = dec.decode(pr_r);  //Takes a projected vector as input and returns a long array after normalizing and hashing it (decodedVec).
+	     long[] ret = new long[times*nonoise.length];   //Uses the length of the decodedVec. The array 'ret' has length = length of decodedVec * NumBlur
 
-	     System.arraycopy(nonoise, 0, ret, 0, nonoise.length);
+	     System.arraycopy(nonoise, 0, ret, 0, nonoise.length);   //Copies the elements of a decodedVec to 'ret'.
 
 	     //add some blurring probes in addition to the unnoised decoding
-	     float[] rtmp = new float[pr_r.length];
+	     float[] rtmp = new float[pr_r.length];   //The array rtmp has length equal to the length of a projected vector.
 	     float[] tmp;
 		 for(int j =1;j<times;j++)
 		 {
-	    	 System.arraycopy(pr_r, 0, rtmp, 0, pr_r.length);
+	    	 System.arraycopy(pr_r, 0, rtmp, 0, pr_r.length);    //Copies the elements of a projected vector to 'rtmp'.
 	    	 tmp = noise.get(j-1);
-			 for(int k =0;k<pr_r.length;k++){
-				 rtmp[k]= rtmp[k]+tmp[k]; 
+			 for(int k =0;k<pr_r.length;k++){      //Uses the length of a projected vector
+				 rtmp[k]= rtmp[k]+tmp[k];      //rtmp
 			 }
-			 nonoise = dec.decode(rtmp);
-			 System.arraycopy(nonoise, 0, ret, j*nonoise.length, nonoise.length);
+			 nonoise = dec.decode(rtmp);    //Decode rtmp
+			 System.arraycopy(nonoise, 0, ret, j*nonoise.length, nonoise.length);     //Fill the rest of 'ret' with blurring probes
 	     }
-		 return ret; 
+		 return ret;   //Return a decoded vector with blurring added.
 		}
 	
 	public long lshMinHashRadius(float[] r,float radius,int times){

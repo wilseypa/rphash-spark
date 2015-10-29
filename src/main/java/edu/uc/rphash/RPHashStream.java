@@ -35,7 +35,7 @@ public class RPHashStream implements StreamClusterer {
 	@Override
 	public synchronized long addVectorOnlineStep(float[] vec) {
 		long hash[];
-		Centroid c = new Centroid(vec); //Create a centroid as new vectors keep coming from the DStream
+		Centroid c = new Centroid(vec); //Create/initialize a new centroid object c.
 		
 		float tmpvar = vartracker.updateVarianceSample(vec); //Set tmpvar as each vector is passed to the method 'updateVarianceSample'
 		if(variance!=tmpvar){
@@ -45,9 +45,9 @@ public class RPHashStream implements StreamClusterer {
 		}
 		for (LSH lshfunc : lshfuncs) 
 		{
-			hash = lshfunc.lshHashRadiusNo2Hash(vec, so.getNumBlur()); //
+			hash = lshfunc.lshHashRadiusNo2Hash(vec, so.getNumBlur());   //Takes a vector and NumBlur and returns a decoded vector with blurring added.
 			for (long h : hash)
-				c.addID(h);
+				c.addID(h);   //See detailed comments at Centroid.java
 		}
 		is.add(c);
 		return  is.count;

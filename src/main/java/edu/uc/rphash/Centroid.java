@@ -19,7 +19,7 @@ public class Centroid {
 	}
 
 	public Centroid(float[] data) {
-		this.vec = data;
+		this.vec = data;   //A vector from the DStream
 		this.ids = new HashSet<Long>();
 		this.count = 1;
 	}
@@ -61,8 +61,8 @@ public class Centroid {
 
 	public void addID(long h) {
 		if (ids.size() == 0)
-			id = h;
-		ids.add(h);
+			id = h;   //The first element of the decoded blurred vector is set as 'id'.
+		ids.add(h);    //Add elements of the decoded blurred vector to set 'ids' (duplicate elements are not addded).
 	}
 
 }
