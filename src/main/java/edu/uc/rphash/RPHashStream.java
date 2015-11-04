@@ -49,8 +49,8 @@ public class RPHashStream implements StreamClusterer {
 			for (long h : hash)
 				c.addID(h);   //See detailed comments at Centroid.java
 		}
-		is.add(c);
-		return  is.count;
+		is.add(c);   //Takes a centroid object
+		return  is.count;  //
 	}
 
 	public void init() {
@@ -113,13 +113,13 @@ public class RPHashStream implements StreamClusterer {
 	public List<float[]> getCentroids() 
 	{
 		if (centroids == null){
-			run();
+			run();  //... Online step
 			centroids = new ArrayList<float[]>();
-			for (Centroid cent : is.getTop())
-				centroids.add(cent.centroid());
-			centroids = new Kmeans(so.getk(), centroids, is.getCounts()).getCentroids();
+			for (Centroid cent : is.getTop())     //getTop() returns the centroids from 'priorityQueue'.
+				centroids.add(cent.centroid());   //Add centroids
+			centroids = new Kmeans(so.getk(), centroids, is.getCounts()).getCentroids();  //Run K-Means offline step
 		}
-		return centroids;
+		return centroids;     //Return final centroids
 	}
 	
 	ArrayList<Float> counts;
@@ -168,7 +168,7 @@ public class RPHashStream implements StreamClusterer {
 				//StreamingKmeans rphit = new StreamingKmeans(gen.data(), k);
 				RPHashStream rphit = new RPHashStream(gen.getData(), k);  //Set variance and parameters of RPHash. Initialize counter, LSH and projection matrices.
 				long startTime = System.nanoTime();
-				rphit.getCentroids();
+				rphit.getCentroids();    //Run online and K-Means offline steps and return final centroids
 				long duration = (System.nanoTime() - startTime);
 				
 				List<float[]> aligned = TestUtil.alignCentroids(

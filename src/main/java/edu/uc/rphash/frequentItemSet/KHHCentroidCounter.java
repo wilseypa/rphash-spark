@@ -114,15 +114,15 @@ public class KHHCentroidCounter {
 
 	public void add(Centroid c) {
 		this.count++;
-		float count = addLong(c.id, 1);
-		Centroid probed = frequentItems.remove(c.id);
+		float count = addLong(c.id, 1);    //Takes the first element of the decoded blurred vector (id) and returns 'min'.
+		Centroid probed = frequentItems.remove(c.id);   //'probed' has the previous vector associated with 'id' or null. 
 		//search for blurred and projected versions if
 		//representative id is not in the frequentItems lists
-		for (Long h : c.ids) {
+		for (Long h : c.ids) {   //
 			if (probed != null) {
 				break;
 			}
-			probed = frequentItems.remove(h);
+			probed = frequentItems.remove(h);   //
 		}
 
 		if (probed == null) {//add new centroid to the tree and frequent item list
@@ -151,9 +151,9 @@ public class KHHCentroidCounter {
 	}
 
 	private int hash(long item, int i) {
-		long hash = hashA[i] * item;
-		hash += hash >>> 32;
-		hash &= PRIME_MODULUS;
+		long hash = hashA[i] * item;    //Multiply the first elements of hashA[] and the decoded blurred blurred vector
+		hash += hash >>> 32;    //Move the value of hash to right by 32 bits and fill up shifted values with zeros. Add this to hash.
+		hash &= PRIME_MODULUS;  //Bitwise AND of hash and PRIME_MODULUS
 		return (int) (hash % width);
 	}
 	
@@ -174,7 +174,7 @@ public class KHHCentroidCounter {
 		float min;
 		if(decayRate!=null)
 		{
-			int htmp = hash(item, 0);
+			int htmp = hash(item, 0);   //Takes the first element of the decoded blurred vector (id/item).
 			int oldtime = decaytable[0][htmp];
 			tableF[0][htmp] = decayOnInsert(tableF[0][htmp],oldtime);
 			decaytable[0][htmp] = (int) count;
@@ -182,21 +182,21 @@ public class KHHCentroidCounter {
 			min = tableF[0][htmp];
 			
 			for (int i = 1; i < depth; ++i) {
-				htmp = hash(item, i);
+				htmp = hash(item, i);   //Takes the first element of the decoded blurred vector (id/item)
 				oldtime = decaytable[i][htmp];
 				tableF[i][htmp] = decayOnInsert(tableF[i][htmp],oldtime);
 				decaytable[i][htmp] = (int) count;
-				if (tableF[i][hash(item, i)] < min)
-					min =  tableF[i][hash(item, i)];
+				if (tableF[i][hash(item, i)] < min)    //hash(item, i) = htmp
+					min =  tableF[i][hash(item, i)];    //hash(item, i) = htmp
 			}
 		}
 		else{
-			tableS[0][hash(item, 0)] += count;
-			min = (int) tableS[0][hash(item, 0)];
+			tableS[0][hash(item, 0)] += count;   //...
+			min = (int) tableS[0][hash(item, 0)];   //...
 			for (int i = 1; i < depth; ++i) {
-				tableS[i][hash(item, i)] += count;
-				if (tableS[i][hash(item, i)] < min)
-					min = (int) tableS[i][hash(item, i)];
+				tableS[i][hash(item, i)] += count;    //...
+				if (tableS[i][hash(item, i)] < min)   //...
+					min = (int) tableS[i][hash(item, i)];    //...
 			}
 			
 		}
@@ -244,9 +244,9 @@ public class KHHCentroidCounter {
 
 		this.topcent = new ArrayList<>();
 		this.counts = new ArrayList<>();
-		while (!priorityQueue.isEmpty()) {
-			Centroid tmp = priorityQueue.poll();
-			topcent.add(tmp);
+		while (!priorityQueue.isEmpty()) {     //Returns true if 'priorityQueue' is not empty.
+			Centroid tmp = priorityQueue.poll();    //Move the top element of 'priorityQueue' to 'tmp'.
+			topcent.add(tmp);     //Add 'tmp' to the end of 'topcent'. 
 			counts.add(count(tmp.id));// count(tmp.id));
 		}
 
