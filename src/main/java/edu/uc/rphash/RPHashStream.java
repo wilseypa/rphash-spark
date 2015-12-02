@@ -1,5 +1,20 @@
 package edu.uc.rphash;
 
+
+import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.StorageLevels;
+import org.apache.spark.api.java.function.FlatMapFunction;
+import org.apache.spark.api.java.function.Function2;
+import org.apache.spark.api.java.function.PairFunction;
+import org.apache.spark.streaming.Durations;
+import org.apache.spark.streaming.api.java.JavaDStream;
+import org.apache.spark.streaming.api.java.JavaPairDStream;
+import org.apache.spark.streaming.api.java.JavaStreamingContext;
+
+import scala.Tuple2;
+import com.google.common.collect.Lists;
+import java.util.regex.Pattern;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -157,14 +172,15 @@ public class RPHashStream implements StreamClusterer {
 	}
 
 	public static void main(String[] args) throws Exception{
+		
+		if (args.length != 3) {
+			System.err.println("Usage: StreamingRPHash " + "<inputFileDir> <batchDuration> <numClusters>");
+			System.exit(1);
+		}
 
-		int k = 10;
-		int d = 100;
-		int n = 20000;
-		float var = .75f;
-		for (float f = (float)d; f < 100000f; f*=1.5f) {
-			for (int i = 0; i < 1; i++) {
-				GenerateData gen = new GenerateData(k, n / k, (int)f, var, true, 1f);  //Input DStream
+		SparkConf conf = new SparkConf().setMaster("local[4]").setAppName("StreamingRPHash_Spark");
+		JavaStreamingContext jssc = new JavaStreamingContext(conf, Durations.seconds(Long.parseLong(args[1])));
+		JavaDStream<String> data = jssc.textFileStream(args[0]);  //Input DStream
 				//StreamingKmeans rphit = new StreamingKmeans(gen.data(), k);
 				RPHashStream rphit = new RPHashStream(gen.getData(), k);  //Set variance and parameters of RPHash. Initialize counter, LSH and projection matrices.
 				long startTime = System.nanoTime();
