@@ -1,25 +1,18 @@
 package edu.uc.rphash;
 
 
-import org.apache.spark.SparkConf;
-import org.apache.spark.api.java.StorageLevels;
-import org.apache.spark.api.java.function.FlatMapFunction;
-import org.apache.spark.api.java.function.Function2;
-import org.apache.spark.api.java.function.PairFunction;
-import org.apache.spark.streaming.Durations;
-import org.apache.spark.streaming.api.java.JavaDStream;
-import org.apache.spark.streaming.api.java.JavaPairDStream;
-import org.apache.spark.streaming.api.java.JavaStreamingContext;
-
-import scala.Tuple2;
-import com.google.common.collect.Lists;
-import java.util.regex.Pattern;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+
+
+import org.apache.spark.SparkConf;
+import org.apache.spark.mllib.linalg.Vectors;
+import org.apache.spark.streaming.Durations;
+import org.apache.spark.streaming.api.java.JavaDStream;
+import org.apache.spark.streaming.api.java.JavaStreamingContext;
 
 import edu.uc.rphash.Readers.RPHashObject;
 import edu.uc.rphash.Readers.SimpleArrayReader;
@@ -32,11 +25,9 @@ import edu.uc.rphash.projections.Projector;
 import edu.uc.rphash.standardhash.HashAlgorithm;
 import edu.uc.rphash.standardhash.MurmurHash;
 import edu.uc.rphash.tests.ClusterGenerator;
-import edu.uc.rphash.tests.GenerateData;
 import edu.uc.rphash.tests.GenerateStreamData;
 import edu.uc.rphash.tests.Kmeans;
 import edu.uc.rphash.tests.StatTests;
-import edu.uc.rphash.tests.StreamingKmeans;
 import edu.uc.rphash.tests.TestUtil;
 
 public class RPHashStream implements StreamClusterer {
@@ -180,9 +171,9 @@ public class RPHashStream implements StreamClusterer {
 
 		SparkConf conf = new SparkConf().setMaster("local[4]").setAppName("StreamingRPHash_Spark");
 		JavaStreamingContext jssc = new JavaStreamingContext(conf, Durations.seconds(Long.parseLong(args[1])));
-		JavaDStream<String> data = jssc.textFileStream(args[0]);  //Input DStream
-				//StreamingKmeans rphit = new StreamingKmeans(gen.data(), k);
-				RPHashStream rphit = new RPHashStream(gen.getData(), k);  //Set variance and parameters of RPHash. Initialize counter, LSH and projection matrices.
+		JavaDStream<String> data = jssc.textFileStream(args[0]).map(Vectors.parse);  //Input DStream
+		
+		RPHashStream rphit = new RPHashStream(gen.getData(), k);  //Set variance and parameters of RPHash. Initialize counter, LSH and projection matrices.
 				long startTime = System.nanoTime();
 				rphit.getCentroids();    //Run online and K-Means offline steps and return final centroids
 				long duration = (System.nanoTime() - startTime);
