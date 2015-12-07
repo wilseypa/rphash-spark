@@ -1,8 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry including="**/*.java" kind="src" output="target/test-classes" path="src/test/java"/>
-	<classpathentry including="**/*.java" kind="src" path="src/main/java"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="src" output="target/test-classes" path="src/test/java">
+		<attributes>
+			<attribute name="optional" value="true"/>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" output="target/classes" path="src/main/java">
+		<attributes>
+			<attribute name="optional" value="true"/>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="var" path="M2_REPO/org/apache/spark/spark-core_2.10/1.2.0/spark-core_2.10-1.2.0.jar"/>
 	<classpathentry kind="var" path="M2_REPO/com/twitter/chill_2.10/0.5.0/chill_2.10-0.5.0.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/scala-lang/scala-library/2.10.4/scala-library-2.10.4.jar"/>
@@ -137,5 +151,16 @@
 	<classpathentry kind="var" path="M2_REPO/net/sf/py4j/py4j/0.8.2.1/py4j-0.8.2.1.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/apache/spark/spark-streaming_2.10/1.5.0/spark-streaming_2.10-1.5.0.jar"/>
 	<classpathentry kind="lib" path="/home/lee/workspace/rphash-spark/lib/RPHash.jar"/>
+	<classpathentry kind="src" output="target/classes" path="media/anindya/Data/UC/Research/RPHash/Github Repositories/RPHash/src">
+		<attributes>
+			<attribute name="optional" value="true"/>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.m2e.MAVEN2_CLASSPATH_CONTAINER">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
