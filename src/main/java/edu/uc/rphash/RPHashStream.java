@@ -2,6 +2,7 @@ package edu.uc.rphash;
 
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -9,6 +10,7 @@ import java.util.Random;
 
 
 import org.apache.spark.SparkConf;
+import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.linalg.Vectors;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaDStream;
@@ -171,7 +173,8 @@ public class RPHashStream implements StreamClusterer {
 
 		SparkConf conf = new SparkConf().setMaster("local[4]").setAppName("StreamingRPHash_Spark");
 		JavaStreamingContext jssc = new JavaStreamingContext(conf, Durations.seconds(Long.parseLong(args[1])));
-		JavaDStream<String> data = jssc.textFileStream(args[0]).map(Vectors.parse);  //Input DStream
+		JavaDStream<String> rawData = jssc.textFileStream(args[0]);  //Input DStream
+		JavaDStream<Vector> data = Vectors.parse(rawData);
 		
 		RPHashStream rphit = new RPHashStream(gen.getData(), k);  //Set variance and parameters of RPHash. Initialize counter, LSH and projection matrices.
 				long startTime = System.nanoTime();
