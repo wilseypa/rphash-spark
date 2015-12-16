@@ -8,13 +8,17 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
-
 import org.apache.spark.SparkConf;
-import org.apache.spark.mllib.linalg.Vector;
-import org.apache.spark.mllib.linalg.Vectors;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
+
+import com.google.common.collect.Lists;
+
+import org.apache.spark.mllib.linalg.Vectors;
+import org.apache.spark.mllib.linalg.Vector;
+import org.apache.spark.api.java.function.FlatMapFunction;
+import org.apache.spark.api.java.function.Function;
 
 import edu.uc.rphash.Readers.RPHashObject;
 import edu.uc.rphash.Readers.SimpleArrayReader;
@@ -173,8 +177,19 @@ public class RPHashStream implements StreamClusterer {
 
 		SparkConf conf = new SparkConf().setMaster("local[4]").setAppName("StreamingRPHash_Spark");
 		JavaStreamingContext jssc = new JavaStreamingContext(conf, Durations.seconds(Long.parseLong(args[1])));
-		JavaDStream<String> rawData = jssc.textFileStream(args[0]);  //Input DStream
-		JavaDStream<Vector> data = Vectors.parse(rawData);
+		
+		JavaDStream<String> stringData = jssc.textFileStream(args[0]);  //Input DStream
+		JavaDStream<Float> data = stringData.flatMap(new FlatMapFunction<String, Float>() {
+			 @Override
+		      public List<Float> call(String x) {
+		    	  List<String> stringVector = Arrays.asList(x.split(","));
+		    	  List<Float> floatVector = new ArrayList<>();
+		    	  for (String element : stringVector)
+		    		  floatVector.add(Float.valueOf(element));		    	  
+		    	  
+		    	  return floatVector;
+		      }
+		    });
 		
 		RPHashStream rphit = new RPHashStream(gen.getData(), k);  //Set variance and parameters of RPHash. Initialize counter, LSH and projection matrices.
 				long startTime = System.nanoTime();
