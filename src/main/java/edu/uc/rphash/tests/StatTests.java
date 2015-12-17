@@ -6,6 +6,9 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.spark.api.java.function.Function3;
+import org.apache.spark.streaming.api.java.JavaDStream;
+
 import edu.uc.rphash.Readers.StreamObject;
 
 public class StatTests {
@@ -77,13 +80,29 @@ public class StatTests {
 	
 	
 	
-	public static float varianceSample(List<float[]> data,float sampRatio){
+	public static float varianceSample(JavaDStream<Float> data,float sampRatio){
 		float n = 0;
 		float mean = 0;
 		float M2 = 0;
 		Random r = new Random();
 		
-		int len = data.size();  //Total no. of elements in the DStream
+		//Total no. of vectors in the DStream so far
+		// Update the cumulative count function
+	    final Function3<String, Optional<Integer>, State<Integer>, Tuple2<String, Integer>> mappingFunc =
+	        new Function3<String, Optional<Integer>, State<Integer>, Tuple2<String, Integer>>() {
+
+	          @Override
+	          public Tuple2<String, Integer> call(String word, Optional<Integer> one, State<Integer> state) {
+	            int sum = one.or(0) + (state.exists() ? state.get() : 0);
+	            Tuple2<String, Integer> output = new Tuple2<String, Integer>(word, sum);
+	            state.update(sum);
+	            return output;
+	          }
+	        };
+	     // DStream made of get cumulative counts that get updated in every batch
+	        JavaMapWithStateDStream<String, Integer, Integer, Tuple2<String, Integer>> stateDstream =
+	            wordsDstream.mapWithState(StateSpec.function(mappingFunc).initialState(initialRDD));
+		
 		
 		for(int i = 0 ; i<sampRatio*len; i++){
 			float[] row = data.get(r.nextInt(len)); //DStream...

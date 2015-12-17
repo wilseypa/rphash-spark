@@ -12,11 +12,6 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
-
-import com.google.common.collect.Lists;
-
-import org.apache.spark.mllib.linalg.Vectors;
-import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
 
@@ -98,9 +93,9 @@ public class RPHashStream implements StreamClusterer {
 		init();
 	}
 
-	public RPHashStream(List<float[]> data, int k) {
+	public RPHashStream(JavaDStream<Float> data, int k) {
 
-		variance = StatTests.varianceSample(data, .01f); //Get variance. Uses total no. of elements in the DStream
+		variance = StatTests.varianceSample(data, .01f); //Get variance. Uses total no. of vectors in the DStream
 		so = new SimpleArrayReader(data, k);  //Set parameters of RPHash. Uses dimension of DStream
 		init();
 	}
@@ -174,6 +169,8 @@ public class RPHashStream implements StreamClusterer {
 			System.err.println("Usage: StreamingRPHash " + "<inputFileDir> <batchDuration> <numClusters>");
 			System.exit(1);
 		}
+		
+		int k = Integer.parseInt(args[2]);
 
 		SparkConf conf = new SparkConf().setMaster("local[4]").setAppName("StreamingRPHash_Spark");
 		JavaStreamingContext jssc = new JavaStreamingContext(conf, Durations.seconds(Long.parseLong(args[1])));
@@ -191,7 +188,7 @@ public class RPHashStream implements StreamClusterer {
 		      }
 		    });
 		
-		RPHashStream rphit = new RPHashStream(gen.getData(), k);  //Set variance and parameters of RPHash. Initialize counter, LSH and projection matrices.
+		RPHashStream rphit = new RPHashStream(data, k);  //Set variance and parameters of RPHash. Initialize counter, LSH and projection matrices.
 				long startTime = System.nanoTime();
 				rphit.getCentroids();    //Run online and K-Means offline steps and return final centroids
 				long duration = (System.nanoTime() - startTime);
