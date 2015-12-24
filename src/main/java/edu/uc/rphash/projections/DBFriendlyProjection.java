@@ -63,7 +63,7 @@ public class DBFriendlyProjection implements Projector {
 	}
 
 	@Override
-	public float[] project(float[] v) {  //Pass a vector and return projected vector
+	public float[] project(float[] v) {
 		return projectN(v, P, M, n, t);
 	}
 
@@ -83,11 +83,11 @@ public class DBFriendlyProjection implements Projector {
 			sum = 0.0f;
 			tmp = M[i];
 			for (int k = 0; k < tmp.length; k++) {
-				sum -= v[tmp[k]] * scale; //Multiply elements of a vector by 'scale'
+				sum -= v[tmp[k]] * scale;
 			}
 			tmp = P[i];
 			for (int k = 0; k < tmp.length; k++) {
-				sum += v[tmp[k]] * scale;  ////Multiply elements of a vector by 'scale'
+				sum += v[tmp[k]] * scale;
 			}
 			r[i] = sum;
 		}

@@ -1,32 +1,33 @@
 package edu.uc.rphash;
 
 import java.util.HashSet;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 import edu.uc.rphash.Readers.RPVector;
 
 public class Centroid {
 	private float[] vec;
 	private long count;
-	public HashSet<Long> ids;
+	public ConcurrentSkipListSet<Long> ids;
 	public long id;
 
 	public Centroid(int dim, long id) {
 		this.vec = new float[dim];
 		this.count = 0;
 		this.id = id;
-		this.ids = new HashSet<Long>();
+		this.ids = new ConcurrentSkipListSet<Long>();
 		ids.add(id);
 	}
 
 	public Centroid(float[] data) {
-		this.vec = data;   //A vector from the DStream
-		this.ids = new HashSet<Long>();
+		this.vec = data;
+		this.ids = new ConcurrentSkipListSet<Long>();
 		this.count = 1;
 	}
 
 	public Centroid(float[] data, long id) {
 		this.vec = data;
-		this.ids = new HashSet<Long>();
+		this.ids = new ConcurrentSkipListSet<Long>();
 		ids.add(id);
 		this.id = id;
 		this.count = 1;
@@ -61,8 +62,17 @@ public class Centroid {
 
 	public void addID(long h) {
 		if (ids.size() == 0)
-			id = h;   //The first element of the decoded blurred vector is set as 'id'.
-		ids.add(h);    //Add elements of the decoded blurred vector to set 'ids' (duplicate elements are not addded).
+			id = h;
+		ids.add(h);
 	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if(obj instanceof Centroid){
+			return ((Centroid)obj).id == id;
+		}
+		return false;
+	}
+	
 
 }

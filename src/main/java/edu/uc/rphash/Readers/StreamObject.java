@@ -13,6 +13,7 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.Reader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -30,16 +31,19 @@ import edu.uc.rphash.decoders.Spherical;
 import edu.uc.rphash.tests.StatTests;
 import edu.uc.rphash.tests.TestUtil;
 
+import org.apache.spark.SparkConf;
+import org.apache.spark.streaming.Duration;
+import org.apache.spark.streaming.api.java.JavaDStream;
+import org.apache.spark.streaming.api.java.JavaStreamingContext;
+import org.apache.spark.api.java.function.FlatMapFunction;
+import org.apache.spark.api.java.function.Function;
+
 public class StreamObject implements RPHashObject, Iterator<float[]> {
 	public List<float[]> data;
-	// List<List<Float>> Xlist;
-
 	int numProjections;
 	int decoderMultiplier;
 	long randomSeed;
-
 	int numBlur;
-
 	String f;
 	InputStream elements;
 	int k;
@@ -50,6 +54,7 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 	List<Long> topIDs;
 	int multiDim;
 	Decoder dec;
+	float decayrate=0;
 
 	ExecutorService executor;
 	InputStream inputStream;
@@ -67,8 +72,6 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 	// --input random seed;
 	public StreamObject(PipedInputStream istream, int k, int dim,
 			ExecutorService executor) throws IOException {
-
-		// inputStream = new DataInputStream(istream);
 		this.executor = executor;
 
 		this.dim = dim;
@@ -84,25 +87,41 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 		this.data = null;
 		this.centroids = new ArrayList<float[]>();
 		this.topIDs = new ArrayList<Long>();
-		// dec = new MultiDecoder(
-		// getInnerDecoderMultiplier()*inner.getDimensionality(), inner);
 	}
 
 	boolean filereader = false;
 
-	public StreamObject(String f, int k, boolean raw) throws IOException {
+	public StreamObject(String f, int k, int batchDuration, boolean raw) throws IOException {
 		this.f = f;
+		/*
+		SparkConf conf = new SparkConf().setMaster("local[4]").setAppName("StreamingRPHash_Spark");
+		JavaStreamingContext jssc = new JavaStreamingContext(conf, new Duration(batchDuration));
+		
+		JavaDStream<String> stringData = jssc.textFileStream(f);
+		JavaDStream<Float> dataStream = stringData.flatMap(new FlatMapFunction<String, Float>() {
+			 @Override
+		      public List<Float> call(String x) {
+		    	  List<String> stringVector = Arrays.asList(x.split(","));
+		    	  List<Float> floatVector = new ArrayList<>();
+		    	  for (String element : stringVector)
+		    		  floatVector.add(Float.valueOf(element));		    	  
+		    	  
+		    	  return floatVector;
+		      }
+		    });
+		*/
 
-		filereader = true;
+		// filereader = true;
 		// if (this.f.endsWith("gz"))
 		// inputStream = new BufferedReader(new InputStreamReader(
 		// new GZIPInputStream(new FileInputStream(this.f))));
 		// else
 		// inputStream = new BufferedReader(new InputStreamReader(
 		// new FileInputStream(this.f)));
-		// read the n and m dimension header
+		// read the n and m dimension header		
 		this.raw = raw;
-
+		
+		/*
 		if (this.f.endsWith("gz"))
 			inputStream = new GZIPInputStream(new FileInputStream(this.f));
 		else
@@ -116,9 +135,9 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 			binin = new DataInputStream(new BufferedInputStream(inputStream));
 			int d = binin.readInt();
 			dim = binin.readInt();
-
 		}
-
+		*/
+		
 		this.randomSeed = DEFAULT_NUM_RANDOM_SEED;
 		this.hashmod = DEFAULT_HASH_MODULUS;
 		this.decoderMultiplier = DEFAULT_NUM_DECODER_MULTIPLIER;
@@ -133,6 +152,7 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 		this.topIDs = new ArrayList<Long>();
 		// dec = new MultiDecoder(
 		// getInnerDecoderMultiplier()*inner.getDimensionality(), inner);
+		
 	}
 
 	@Override
@@ -183,7 +203,6 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 
 	@Override
 	public List<Long> getPreviousTopID() {
-
 		return topIDs;
 	}
 
@@ -225,7 +244,6 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 	@Override
 	public void setHashMod(long parseLong) {
 		hashmod = (int) parseLong;
-
 	}
 
 	@Override
@@ -250,7 +268,6 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 	@Override
 	public void setDecoderType(Decoder dec) {
 		this.dec = dec;
-
 	}
 
 	@Override
@@ -272,13 +289,11 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 	@Override
 	public void setNumBlur(int parseInt) {
 		this.numBlur = parseInt;
-
 	}
 
 	@Override
 	public void setRandomSeed(long parseLong) {
 		randomSeed = parseLong;
-
 	}
 
 	@Override
@@ -307,47 +322,18 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 			e.printStackTrace();
 		}
 		return readFloat;
-		// // Read data with timeout
-		// Callable<float[]> readTask = new Callable<float[]>() {
-		// @Override
-		// public float[] call() {
-		// float[] vec = new float[dim];
-		// try {
-		// for (int i = 0; i < dim; i++) {
-		// vec[i] = inputStream.readFloat();
-		// if(filereader)inputStream.readChar();
-		// }
-		// return vec;
-		// } catch (IOException e) {
-		// return null;
-		// }
-		// }
-		// };
-
-		// Future<float[]> future = executor.submit(readTask);
-		// try {
-		// readFloat = future.get(5000, TimeUnit.MILLISECONDS);
-		// if (readFloat != null) {
-		// return readFloat;
-		// }
-		// } catch (InterruptedException e) {
-		// // TODO Auto-generated catch block
-		// e.printStackTrace();
-		// } catch (ExecutionException e) {
-		// // TODO Auto-generated catch block
-		// e.printStackTrace();
-		// } catch (TimeoutException e) {
-		// // TODO Auto-generated catch block
-		// e.printStackTrace();
-		// }
-		//
-		// return null;
 	}
 
 	@Override
 	public void setVariance(List<float[]> data) {
 		dec.setVariance(StatTests.varianceSample(data, .01f));
-
 	}
 
+	public void setDecayRate(float parseFloat) {
+		this.decayrate = parseFloat;
+	}
+	
+	public float getDecayRate(){
+		return this.decayrate;
+	}
 }

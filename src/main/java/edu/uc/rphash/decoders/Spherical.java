@@ -13,7 +13,7 @@ import edu.uc.rphash.tests.TestUtil;
  */
 public class Spherical implements Decoder {
 	int HashBits = 64;
-	List<List<float[]>> vAll; // vAll[i][j] is the vector $A_i \tilde v_j$ from
+	final List<List<float[]>> vAll; // vAll[i][j] is the vector $A_i \tilde v_j$ from
 				// the article.
 	int hbits; // Ceil(Log2(2*d)).
 	int d; // the dimension of the feature space.
@@ -26,10 +26,17 @@ public class Spherical implements Decoder {
 			// scanned linearly during query.
 	float distance = 0;
 
+	/**
+	 * This class represent a spherical lsh scheme. Vectors are decoded to the nearest vertex of the d dimensional orthoplex
+	 * reresented by a canonical ordered integer.
+	 * @param d - the number of dimension in the orthoplex
+	 * @param k - number of rotations of the fundamental hash functions
+	 * @param L - the number to search, currently ignored in RPHash
+	 */
 	public Spherical(int d, int k, int L) {
 		this.d = d;//number of dimensions
 		this.k = k;//number of elementary hash functions
-		this.l = L;//number of copies to search
+		this.l = 1;//L;//number of copies to search
 		double nvertex = 2.0 * this.d;
 		this.hbits = (int) Math.ceil(Math.log(nvertex) / Math.log(2));
 		int kmax = (int) (HashBits / this.hbits);
@@ -51,11 +58,8 @@ public class Spherical implements Decoder {
 		// list of
 		// rotated vectors itself!
 		this.vAll = new ArrayList<List<float[]>>(k*l); // random rotation matrices
-		
-		List<List<float[]>> rotationMatrices = this.vAll;
-
 		for (int i = 0; i < k*l; i++) {
-			rotationMatrices.add(i, randomRotation(this.d, r));
+			this.vAll.add(i, randomRotation(this.d, r));
 		}
 	}
 
@@ -66,9 +70,12 @@ public class Spherical implements Decoder {
 
 
 	@Override
-	public long[] decode(float[] f) {  //Input a projected vector
+	public long[] decode(float[] f) {
 //		byte[] lg = new byte[this.l * 8];
-		long[] dec = Hash(TestUtil.normalize(f));   //Normalize the projected vector and hash it. A long array is returned and stored in 'dec'.
+		//doesnt seem to be needed since we are variance scaling in the LSH function
+//		long[] dec = Hash(TestUtil.normalize(f));
+		
+		long[] dec = Hash(f);
 //		int ct = 0;
 //		for (long d:dec) {
 //			lg[ct++] = (byte)(d >>> 56);
@@ -94,13 +101,13 @@ public class Spherical implements Decoder {
 		return distance;
 	}
 
-	long argmaxi(float[] p, List<float[]> vs) {       //Input a normalized projected vector p (and list vs)
+	long argmaxi(float[] p, List<float[]> vs) {
 		long maxi = 0;
 		float max = 0;
 
 		for (int i = 0; i < this.d; i++) {
-			float dot = dot(p, vs.get(i));   //float dot stores the dot product of p and an element of list vs 
-
+			float dot = dot(p, vs.get(i));
+			//compute orthoplex of -1 and 1 simultaneously
 			float abs = dot >= 0 ? dot : -dot;
 			if (abs < max) {
 				continue;
@@ -127,12 +134,12 @@ public class Spherical implements Decoder {
 		return t;
 	}
 
-	float dot(float[] t, float[] u) {      //Input a normalized projected vector t (and an element of the list vs, which is a float array)
+	float dot(float[] t, float[] u) {
 		float s = 0;
-		for (int i = 0; i < t.length; i++) {     //Use the length of the normalized projected vector t
-			s += t[i] * u[i];      //Multiply each element of t with the corresponding element of u and sum them
+		for (int i = 0; i < t.length; i++) {
+			s += t[i] * u[i];
 		}
-		return s;    //Return the dot product of t and u
+		return s;
 	}
 
 	float[] sub(float[] t, float[] u) {
@@ -154,7 +161,6 @@ public class Spherical implements Decoder {
 
 	List<float[]> randomRotation(int d, Random[] r2) {
 		ArrayList<float[]> R = new ArrayList<>(d);
-
 		for (int i = 0; i < d; i++) {
 			R.add(i, random(d, r2));
 			float[] u = R.get(i);
@@ -171,7 +177,6 @@ public class Spherical implements Decoder {
 			}
 			u = scale(u, 1.0f / norm(u));
 		}
-
 		return R;
 	}
 
@@ -184,7 +189,7 @@ public class Spherical implements Decoder {
 	// is required to take the normalization into account.
 	//
 	// The complexity of this function is O(nL)
-	long[] Hash(float[] p) {       //Input a normalized projected vector.
+	long[] Hash(float[] p) {
 		int ri = 0;
 		long h;
 		//if(variance!=1f)p = scale(p,variance);
@@ -193,7 +198,7 @@ public class Spherical implements Decoder {
 			g[i] = 0;
 			for (int j = 0; j < this.k; j++) {
 				List<float[]> vs = this.vAll.get(ri);
-				h = this.argmaxi(p, vs);   //'argmaxi' takes the normalized projected vector p (and list vs) and returns a long value
+				h = this.argmaxi(p, vs);
 				g[i] |= (h << (this.hbits * j));
 				ri++;
 			}
@@ -206,7 +211,7 @@ public class Spherical implements Decoder {
 	public static void main(String[] args){
 		Random r = new Random();
 		int d = 64;
-		int K = 6; 
+		int K = 9; 
 		int L = 4;
 		Spherical sp = new Spherical(d,K,L);
 		for(int i = 0; i<100;i++){

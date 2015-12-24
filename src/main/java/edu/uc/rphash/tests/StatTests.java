@@ -6,17 +6,16 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Random;
 
-import org.apache.spark.api.java.function.Function3;
-import org.apache.spark.streaming.api.java.JavaDStream;
-
 import edu.uc.rphash.Readers.StreamObject;
+import edu.uc.rphash.util.AtomicFloat;
 
 public class StatTests {
+	int batchDuration;
 	Random r;
-	double sampRatio;
-	public StatTests(double sampRatio) {
+	AtomicFloat sampRatio;
+	public StatTests(float sampRatio) {
 		r = new Random();
-		this.sampRatio = sampRatio;
+		this.sampRatio = new AtomicFloat(sampRatio);
 	}
 
 
@@ -27,6 +26,7 @@ public class StatTests {
 		{
 			if(TestUtil.findNearestDistance(data.get(i), estCentroids)==gen.getLabels().get(i))count++;
 		}
+		System.out.println(data.size());
 		return (float)count/(float)data.size();
 	}
 	
@@ -40,9 +40,9 @@ public class StatTests {
 		return count;
 	}
 	
-	public static double WCSSE(List<float[]> estCentroids, String f,boolean raw) throws IOException{
+	public static double WCSSE(List<float[]> estCentroids, String f, int batchDuration, boolean raw) throws IOException{
 		double count = 0.0 ;
-		StreamObject data = new StreamObject(f,0,raw);
+		StreamObject data = new StreamObject(f,0,batchDuration,raw);
 		while(data.hasNext())
 		{
 			float[] next = data.next();
@@ -66,9 +66,9 @@ public class StatTests {
 	private float M2 = 0;
 	public float updateVarianceSample(float[] row){
 		
-		if(r.nextFloat()>sampRatio)return M2/(n-1f);
+		if(r.nextFloat()>sampRatio.floatValue())return M2/(n-1f);
 		
-		for(float x : row){  //x iterates over each element of a vector of the DStream
+		for(float x : row){
 			n++;
 			float delta = x - mean;
 			mean = mean + delta/n;
@@ -78,34 +78,48 @@ public class StatTests {
 		return  M2/(n-1f);
 	}
 	
+
+	private float[] meanv;
+	private float[] M2v;
+	private float[] variance;
+	public float[] updateVarianceSampleVec(float[] row){
+		if(n==0){
+			meanv = new float[row.length];
+			M2v = new float[row.length];
+			variance = new float[row.length];
+			for(int i = 0;i<row.length;i++)variance[i] = 1f;
+			n++;
+		}
+		
+		if( n>10 && r.nextFloat()>sampRatio.floatValue()){
+			return variance;
+		}
+		
+		n++;
+		for(int i = 0;i<row.length;i++){
+			float x =row[i];
+			float delta = x - meanv[i];
+			meanv[i] = meanv[i] + delta/n;
+			M2v[i] = M2v[i] + delta*(x-meanv[i]);
+			variance[i] = M2v[i]/(n-1f);
+		}	
+		
+		
+		return variance;
+	}
 	
 	
-	public static float varianceSample(JavaDStream<Float> data,float sampRatio){
+	
+	public static float varianceSample(List<float[]> data,float sampRatio){
 		float n = 0;
 		float mean = 0;
 		float M2 = 0;
 		Random r = new Random();
 		
-		//Total no. of vectors in the DStream so far
-		// Update the cumulative count function
-	    final Function3<String, Optional<Integer>, State<Integer>, Tuple2<String, Integer>> mappingFunc =
-	        new Function3<String, Optional<Integer>, State<Integer>, Tuple2<String, Integer>>() {
-
-	          @Override
-	          public Tuple2<String, Integer> call(String word, Optional<Integer> one, State<Integer> state) {
-	            int sum = one.or(0) + (state.exists() ? state.get() : 0);
-	            Tuple2<String, Integer> output = new Tuple2<String, Integer>(word, sum);
-	            state.update(sum);
-	            return output;
-	          }
-	        };
-	     // DStream made of get cumulative counts that get updated in every batch
-	        JavaMapWithStateDStream<String, Integer, Integer, Tuple2<String, Integer>> stateDstream =
-	            wordsDstream.mapWithState(StateSpec.function(mappingFunc).initialState(initialRDD));
-		
+		int len = data.size();
 		
 		for(int i = 0 ; i<sampRatio*len; i++){
-			float[] row = data.get(r.nextInt(len)); //DStream...
+			float[] row = data.get(r.nextInt(len));
 			
 			for(float x : row){
 				n++;
@@ -181,14 +195,12 @@ public class StatTests {
 
 			for(int j=0;j<d;j++)
 			{
-				
 				avgs[j]+=(tmp[j]/n);
 			}	
 			
 		}
 		return avgs;
 	}
-
 
 	public static double variance(double[] row) {
 		double n = 0;

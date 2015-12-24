@@ -17,9 +17,7 @@ import edu.uc.rphash.tests.StatTests;
 
 public class SimpleArrayReader implements RPHashObject {
 
-//	public Iterator<float[]> data;
 	List<float[]> data;
-//	final int n;
 	Integer dim = null;
 	int numProjections;
 	int decoderMultiplier;
@@ -28,30 +26,18 @@ public class SimpleArrayReader implements RPHashObject {
 	final int k;
 	int numBlur;
 	Decoder dec;
-	 
-	 
-	 final static int DEFAULT_NUM_PROJECTIONS = 2;
-	 final static int DEFAULT_NUM_BLUR = 2;
-	 final static int DEFAULT_NUM_RANDOM_SEED = 0;
-	 final static int DEFAULT_NUM_DECODER_MULTIPLIER = 1;
-	 final static long DEFAULT_HASH_MODULUS = Long.MAX_VALUE;
-	 final static Decoder DEFAULT_INNER_DECODER = new Spherical(32,3,1);
-
+	float decayrate;
+	List<float[]> centroids;
+	List<Long> topIDs;
 
 	public void setRandomSeed(long randomSeed) {
 		this.randomSeed = randomSeed;
 	}
 
-
-
 	public void setNumBlur(int numBlur) {
 		this.numBlur = numBlur;
 	}
 
-	List<float[]> centroids;
-	List<Long> topIDs;
-
-	
 	public SimpleArrayReader(int k, ClusterGenerator gen) {
 		this.dim = gen.getDimension();
 		this.randomSeed = DEFAULT_NUM_RANDOM_SEED;
@@ -65,6 +51,7 @@ public class SimpleArrayReader implements RPHashObject {
 		this.centroids = new ArrayList<float[]>();
 		this.topIDs = new ArrayList<Long>();
 		this.data = gen.getData();
+		this.decayrate = 0;
 	}
 	
 	
@@ -77,14 +64,15 @@ public class SimpleArrayReader implements RPHashObject {
 		this.dec = new MultiDecoder(this.decoderMultiplier*DEFAULT_INNER_DECODER.getDimensionality(),DEFAULT_INNER_DECODER);
 		this.numProjections = DEFAULT_NUM_PROJECTIONS;
 		this.numBlur = DEFAULT_NUM_BLUR;
-		this.data = X;  //DStream
+		this.data = X;
 		if(data!=null)
-			this.dim = data.get(0).length;  //Get dimension of DStream
+			this.dim = data.get(0).length;
 		else 
 			this.dim = null;
 		this.k = k;
 		this.centroids = new ArrayList<float[]>();
 		this.topIDs = new ArrayList<Long>();
+		this.decayrate = 0;
 //		for (int i = 0; i < k; i++)
 //			topIDs.add((long) 0);
 	}
@@ -108,6 +96,7 @@ public class SimpleArrayReader implements RPHashObject {
 		this.topIDs = new ArrayList<Long>();
 		for (int i = 0; i < k; i++)
 			topIDs.add((long) 0);
+		this.decayrate = 0;
 	}
 
 	public SimpleArrayReader(List<float[]> X, int k, int blur,
@@ -119,7 +108,7 @@ public class SimpleArrayReader implements RPHashObject {
 		this.numProjections = DEFAULT_NUM_PROJECTIONS;
 		this.numBlur = blur;
 		this.decoderMultiplier = decoderMultiplier;
-		
+		this.decayrate = 0;
 		
 		data = X;
 		if(data!=null)
@@ -163,6 +152,7 @@ public class SimpleArrayReader implements RPHashObject {
 		this.topIDs = new ArrayList<Long>();
 		for (int i = 0; i < k; i++)
 			topIDs.add((long) 0);
+		this.decayrate = 0;
 	}
 
 	public Iterator<float[]> getVectorIterator() {
@@ -193,7 +183,7 @@ public class SimpleArrayReader implements RPHashObject {
 
 	@Override
 	public void reset() {
-
+		System.out.println("cannot reset a data stream");
 	}
 
 	@Override
@@ -204,7 +194,6 @@ public class SimpleArrayReader implements RPHashObject {
 	@Override
 	public void setCentroids(List<float[]> l) {
 		centroids = l;
-
 	}
 
 	@Override
@@ -249,11 +238,8 @@ public class SimpleArrayReader implements RPHashObject {
 
 	@Override
 	public void setHashMod(long parseLong) {
-		hashmod = parseLong;
-		
+		hashmod = parseLong;	
 	}
-
-
 
 	@Override
 	public void setDecoderType(Decoder dec) {
@@ -270,7 +256,6 @@ public class SimpleArrayReader implements RPHashObject {
 		return ret;
 	}
 
-
 	@Override
 	public void setVariance(List<float[]> data) {
 		dec.setVariance(StatTests.varianceSample(data, .01f));
@@ -280,5 +265,19 @@ public class SimpleArrayReader implements RPHashObject {
 	public Decoder getDecoderType() {
 		return dec;
 	}
+
+	@Override
+	public void setDecayRate(float parseFloat) {
+		this.decayrate = parseFloat;
+	}
+
+	@Override
+	public float getDecayRate() {
+		return this.decayrate;
+	}
+	
+
+
+
 
 }

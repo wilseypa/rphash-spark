@@ -526,17 +526,17 @@ public class TestUtil {
 		return ravg;
 	}
 
-	public static float[] normalize(float[] x) {  //Input a projected vector
+	public static float[] normalize(float[] x) {
 		float length = 0;
 
-		for (int i = 0; i < x.length; i++)  //Uses length of a projected vector (x.length)
-			length += (x[i] * x[i]); //Square each element of the vector and add them
-		length = (float) Math.sqrt(length); 
+		for (int i = 0; i < x.length; i++)
+			length += (x[i] * x[i]);
+		length = (float) Math.sqrt(length);
 
-		float[] ret = new float[x.length]; //Initializes the returned vector which is of the same length as the input projected vector
-		for (int i = 0; i < x.length; i++) //Uses length of a projected vector (x.length)
-			ret[i] = x[i] / length;  //Divides each element of the input projected vector by 'length', thus normalizing the input vector
-		return ret; //Return the normalized projected vector
+		float[] ret = new float[x.length];
+		for (int i = 0; i < x.length; i++)
+			ret[i] = x[i] / length;
+		return ret;
 	}
 
 	public static double distance(double[] x, double[] y) {
