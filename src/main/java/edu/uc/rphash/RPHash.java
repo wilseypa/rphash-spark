@@ -12,11 +12,16 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.StorageLevels;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
-import org.apache.spark.streaming.Duration;
+import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaDStream;
+import org.apache.spark.streaming.api.java.JavaPairDStream;
+import org.apache.spark.streaming.api.java.JavaReceiverInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
+import org.apache.spark.api.java.function.PairFunction;
 
 import edu.uc.rphash.Readers.RPHashObject;
 import edu.uc.rphash.Readers.SimpleArrayReader;
@@ -33,6 +38,7 @@ import edu.uc.rphash.tests.StreamingKmeans;
 import edu.uc.rphash.tests.TestUtil;
 import edu.uc.rphash.tests.kmeanspp.DoublePoint;
 import edu.uc.rphash.tests.kmeanspp.KMeansPlusPlus;
+import scala.Tuple2;
 
 public class RPHash {
 
@@ -63,13 +69,15 @@ public class RPHash {
 
 			System.exit(0);
 		}
-
+		
 		List<float[]> data = null;
 
 		String filename = args[0];
 		int k = Integer.parseInt(args[1]);
 		String outputFile = args[2];
-
+		String hostname = args[3];
+		int port = Integer.parseInt(args[4]);
+		
 		boolean raw = false;
 
 		if (args.length == 3) {
@@ -93,7 +101,7 @@ public class RPHash {
 
 		if (taggedArgs.containsKey("streamduration")) {
 			System.out.println(taggedArgs.toString());
-			runStream(runs, filename, outputFile, batchDuration, k, raw);
+			runStream(runs, filename, outputFile, batchDuration, k, hostname, port, raw);
 		}
 
 		// run remaining, read file into ram
@@ -131,6 +139,7 @@ public class RPHash {
 	 *         streamduration vectors
 	 * @throws IOException
 	 */
+	
 	private static long computeAverageReadTime(Integer streamDuration,
 			String f, int testsize, int batchDuration, boolean raw) throws IOException {
 		StreamObject streamer = new StreamObject(f, 0, batchDuration, raw);
@@ -148,83 +157,57 @@ public class RPHash {
 	}
 
 	public static void runStream(List<Clusterer> runitems, String f, String outputFile,
-			int streamDuration, int k, boolean raw) throws IOException,
+			int streamDuration, int k, String hostname, int port, boolean raw) throws IOException,
 			InterruptedException {
 
 		Iterator<Clusterer> cluit = runitems.iterator();
+		Clusterer clu = cluit.next();
 		// needs work, just use for both to be more accurate
-		long avgtimeToRead = 0;// computeAverageReadTime(streamDuration,f,streamDuration);
-		Runtime rt = Runtime.getRuntime();
+		// long avgtimeToRead = 0;// computeAverageReadTime(streamDuration,f,streamDuration);
+		// Runtime rt = Runtime.getRuntime();
 		
 		SparkConf conf = new SparkConf().setMaster("local[4]").setAppName("StreamingRPHash_Spark");
-		JavaStreamingContext jssc = new JavaStreamingContext(conf, new Duration(streamDuration));
+		JavaStreamingContext jssc = new JavaStreamingContext(conf, Durations.seconds(2));
 		
-		JavaDStream<String> stringData = jssc.textFileStream(f);
-		
-		
-		while (cluit.hasNext()) {		
-			Clusterer clu = cluit.next();
-			StreamObject streamer = (StreamObject) clu.getParam();   //'streamer' contains 'so'.
-			if (clu instanceof StreamClusterer) {
-				String[] ClusterHashName = clu.getClass().getName()
-						.split("\\.");
-				String[] DecoderHashName = clu.getParam().toString()
-						.split("\\.");
-				System.out.print("Streaming -- "
-						+ ClusterHashName[ClusterHashName.length - 1] + "{"
-						+ DecoderHashName[DecoderHashName.length - 1]
-						+ ",stream_duration:" + streamDuration
-						+ "} \n cpu time \t wcsse \t\t\t mem(kb)\n");
-				// long startTime = System.nanoTime() + avgtimeToRead;
-				
-				streamer.reset();
-				cluit.remove();
-			}
-		}	
-
-				
-			JavaDStream<Float> dataStream = stringData.flatMap(new FlatMapFunction<String, Float>() {
-			ArrayList<float[]> vecsInThisRound = new ArrayList<float[]>();
-			Clusterer clu = cluit.next();
-			int i = 0;
-			 @Override
-		     public List<Float> call(String x) {
-				 i++;
-				 List<String> stringVector = Arrays.asList(x.split(","));
-		    	 List<Float> floatVector = new ArrayList<>();
+		JavaReceiverInputDStream<String> stringData = jssc.socketTextStream(hostname, port, StorageLevels.MEMORY_AND_DISK_SER);
+		JavaDStream<float[]> dataStream = stringData.map(new Function<String, float[]>() {
+			public float[] call(String s) {
+				List<String> stringVector = Arrays.asList(s.split(","));
+				List<Float> floatVector = new ArrayList<>();
 		    	 for (String element : stringVector)
 		    		 floatVector.add(Float.valueOf(element));
 		    	 float[] nxt = new float[floatVector.size()];
 		    	 int j = 0;
 		    	 for (Float f : floatVector)
 		    		 nxt[j++] = (f != null ? f : Float.NaN);
-		    	 
-		    	 vecsInThisRound.add(nxt);
-				 ((StreamClusterer) clu).addVectorOnlineStep(nxt);
+		    	 return nxt;
+			}			
+		});
+		
+		JavaPairDStream<float[], Long> vecCountPair = dataStream.mapToPair(
+				new PairFunction<float[], float[], Long>() {
+					@Override
+					public Tuple2<float[], Long> call(float[] vec) {
+						long count = ((StreamClusterer) clu).addVectorOnlineStep(vec);
+						return new Tuple2<float[], Long>(vec, count);
+					}
+					
+				});
 	
-				 if (i % streamDuration == 0) {
-					 List<float[]> cents = ((StreamClusterer) clu).getCentroidsOfflineStep();
-					 // long time = System.nanoTime() - startTime;
-					 double wcsse = StatTests.WCSSE(cents, vecsInThisRound);
-					 vecsInThisRound = new ArrayList<float[]>();
-					 
-					 rt.gc();
-					 //Thread.sleep(10);
-					 // rt.gc();
-					 long usedkB = (rt.totalMemory() - rt.freeMemory()) / 1024;
-					 System.out.println(wcsse
-								+ "\t" + usedkB);
-					 TestUtil.writeFile(new File(outputFile + "_round" + i
-								+ ".txt"), cents, raw);
-					 // startTime = System.nanoTime() + avgtimeToRead;
-				 }
-				 return floatVector;
-			  }
-			});
+		vecCountPair.foreachRDD(new Function<JavaPairRDD<float[], Long>, Void>() {
+			int i = 0;
+			public Void call(JavaPairRDD<float[], Long> vecCount) {
+				List<float[]> cents = ((StreamClusterer) clu).getCentroidsOfflineStep();
+				i++;
+				TestUtil.writeFile(new File(outputFile + "_round" + i + ".txt"), cents, raw);
+				return null;			
+			}
+		});
+		
 		jssc.start();
-		jssc.awaitTermination();
+		jssc.awaitTermination();	
 	}
-				
+	
 
 	public static List<Clusterer> runConfigs(List<String> untaggedArgs,
 			Map<String, String> taggedArgs, List<float[]> data, String f,
