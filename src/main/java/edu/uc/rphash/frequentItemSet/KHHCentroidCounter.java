@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.io.*;
 
 import edu.uc.rphash.Centroid;
 
@@ -17,7 +18,7 @@ import edu.uc.rphash.Centroid;
 /*
  * @author lee
  */
-public class KHHCentroidCounter {
+public class KHHCentroidCounter implements Serializable {
 	public static final long PRIME_MODULUS = (1L << 31) - 1;
 	private int depth;
 	private int width;
@@ -33,7 +34,8 @@ public class KHHCentroidCounter {
 	ConcurrentHashMap<Long, Centroid> frequentItems;
 	ConcurrentHashMap<Long, Float> countlist;
 	Float decayRate;
-
+	
+	/*
 	Comparator<Centroid> cmp = new Comparator<Centroid>() {
 		@Override
 		public int compare(Centroid n1, Centroid n2) {
@@ -48,7 +50,10 @@ public class KHHCentroidCounter {
 				return 0;
 			}
 	};
+	*/
+	ModifiedComparator<Centroid> cmp = new ModifiedComparator<Centroid>();
 	
+
 	public KHHCentroidCounter(int k) {
 		this.origk = k;
 		this.k = (int) (k * Math.log(k));

@@ -1,5 +1,6 @@
 package edu.uc.rphash.tests;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -11,7 +12,7 @@ import edu.uc.rphash.projections.DBFriendlyProjection;
 import edu.uc.rphash.projections.GaussianProjection;
 import edu.uc.rphash.projections.Projector;
 
-public class Kmeans  implements Clusterer{
+public class Kmeans  implements Clusterer, Serializable{
 
 	
 	

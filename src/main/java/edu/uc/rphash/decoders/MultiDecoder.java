@@ -1,9 +1,8 @@
 package edu.uc.rphash.decoders;
 
+import java.io.Serializable;
 
-
-
-public class MultiDecoder implements Decoder {
+public class MultiDecoder implements Decoder, Serializable {
 	
 	Decoder innerDec;
 	int dimension;

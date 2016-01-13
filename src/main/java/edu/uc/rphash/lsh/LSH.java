@@ -1,5 +1,6 @@
 package edu.uc.rphash.lsh;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -10,7 +11,7 @@ import edu.uc.rphash.projections.Projector;
 import edu.uc.rphash.standardhash.HashAlgorithm;
 import edu.uc.rphash.tests.TestUtil;
 
-public class LSH {
+public class LSH implements Serializable {
 	public Projector projectionMatrix;
 	HashAlgorithm standardHashAlgorithm;
 	Decoder lshDecoder;

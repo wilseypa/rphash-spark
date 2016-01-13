@@ -1,5 +1,6 @@
 package edu.uc.rphash.decoders;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -11,7 +12,7 @@ import edu.uc.rphash.tests.TestUtil;
  * @author lee
  *
  */
-public class Spherical implements Decoder {
+public class Spherical implements Decoder, Serializable {
 	int HashBits = 64;
 	final List<List<float[]>> vAll; // vAll[i][j] is the vector $A_i \tilde v_j$ from
 				// the article.

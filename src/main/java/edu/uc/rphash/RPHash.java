@@ -16,7 +16,7 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.StorageLevels;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
-import org.apache.spark.streaming.Durations;
+import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaReceiverInputDStream;
@@ -91,17 +91,17 @@ public class RPHash {
 		List<String> truncatedArgs = new ArrayList<String>();
 		Map<String, String> taggedArgs = argsUI(args, truncatedArgs);
 		List<Clusterer> runs;
-		int batchDuration = Integer.parseInt(taggedArgs.get("streamduration"));  // For now, this works only for StreamingRPHash.
+		int streamDuration = Integer.parseInt(taggedArgs.get("streamduration"));  // For now, this works only for StreamingRPHash.
 		if (taggedArgs.containsKey("raw")) {
 			raw = Boolean.getBoolean(taggedArgs.get("raw"));
-			runs = runConfigs(truncatedArgs, taggedArgs, data, filename, batchDuration, true);
+			runs = runConfigs(truncatedArgs, taggedArgs, data, filename, streamDuration, true);
 		} else {
-			runs = runConfigs(truncatedArgs, taggedArgs, data, filename, batchDuration, false);
+			runs = runConfigs(truncatedArgs, taggedArgs, data, filename, streamDuration, false);
 		}
 
 		if (taggedArgs.containsKey("streamduration")) {
 			System.out.println(taggedArgs.toString());
-			runStream(runs, filename, outputFile, batchDuration, k, hostname, port, raw);
+			runStream(runs, filename, outputFile, streamDuration, k, hostname, port, raw);
 		}
 
 		// run remaining, read file into ram
@@ -142,7 +142,7 @@ public class RPHash {
 	
 	private static long computeAverageReadTime(Integer streamDuration,
 			String f, int testsize, int batchDuration, boolean raw) throws IOException {
-		StreamObject streamer = new StreamObject(f, 0, batchDuration, raw);
+		StreamObject streamer = new StreamObject(f, 0, streamDuration, raw);
 		int i = 0;
 
 		ArrayList<float[]> vecsInThisRound = new ArrayList<float[]>();
@@ -165,9 +165,9 @@ public class RPHash {
 		// needs work, just use for both to be more accurate
 		// long avgtimeToRead = 0;// computeAverageReadTime(streamDuration,f,streamDuration);
 		// Runtime rt = Runtime.getRuntime();
-		
+			
 		SparkConf conf = new SparkConf().setMaster("local[4]").setAppName("StreamingRPHash_Spark");
-		JavaStreamingContext jssc = new JavaStreamingContext(conf, Durations.seconds(2));
+		JavaStreamingContext jssc = new JavaStreamingContext(conf, new Duration(streamDuration));
 		
 		JavaReceiverInputDStream<String> stringData = jssc.socketTextStream(hostname, port, StorageLevels.MEMORY_AND_DISK_SER);
 		JavaDStream<float[]> dataStream = stringData.map(new Function<String, float[]>() {
@@ -211,7 +211,7 @@ public class RPHash {
 
 	public static List<Clusterer> runConfigs(List<String> untaggedArgs,
 			Map<String, String> taggedArgs, List<float[]> data, String f,
-			int batchDuration, boolean raw) throws IOException {
+			int streamDuration, boolean raw) throws IOException {
 
 		List<Clusterer> runitems = new ArrayList<>();
 		int i = 3;
@@ -222,7 +222,7 @@ public class RPHash {
 		int k = Integer.parseInt(untaggedArgs.get(1));
 		
 		RPHashObject o = new SimpleArrayReader(data, k);
-		StreamObject so = new StreamObject(f, k, batchDuration, raw);
+		StreamObject so = new StreamObject(f, k, streamDuration, raw);
 
 		if (taggedArgs.containsKey("numprojections")) {
 			so.setNumProjections(Integer.parseInt(taggedArgs

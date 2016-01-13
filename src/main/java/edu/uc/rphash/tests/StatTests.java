@@ -3,13 +3,14 @@ package edu.uc.rphash.tests;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.List;
 import java.util.Random;
 
 import edu.uc.rphash.Readers.StreamObject;
 import edu.uc.rphash.util.AtomicFloat;
 
-public class StatTests {
+public class StatTests implements Serializable {
 	int batchDuration;
 	Random r;
 	AtomicFloat sampRatio;

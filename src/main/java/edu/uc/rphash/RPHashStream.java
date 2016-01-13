@@ -5,11 +5,12 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.RecursiveAction;
-import java.util.concurrent.TimeUnit;
+import java.io.Serializable;
+// import java.util.concurrent.ExecutorService;
+// import java.util.concurrent.Executors;
+// import java.util.concurrent.ForkJoinPool;
+// import java.util.concurrent.RecursiveAction;
+// import java.util.concurrent.TimeUnit;
 
 import edu.uc.rphash.Readers.RPHashObject;
 import edu.uc.rphash.Readers.SimpleArrayReader;
@@ -31,14 +32,14 @@ import edu.uc.rphash.tests.StatTests;
 import edu.uc.rphash.tests.StreamingKmeans;
 import edu.uc.rphash.tests.TestUtil;
 
-public class RPHashStream implements StreamClusterer {
+public class RPHashStream implements StreamClusterer, Serializable {
 	public KHHCentroidCounter is;
 	private LSH[] lshfuncs;
 	private StatTests vartracker;
 	private List<float[]> centroids = null;
 	private RPHashObject so;
 	public boolean parallel = false;
-	ExecutorService executor;
+	// ExecutorService executor;
 	// private final int processors;
 
 	/*
@@ -49,7 +50,7 @@ public class RPHashStream implements StreamClusterer {
 
 	@Override
 	public synchronized long addVectorOnlineStep(final float[] vec) {
-
+		/*
 		if (parallel) 
 		{
 			VectorLevelConcurrency r = new VectorLevelConcurrency(vec, so,
@@ -57,6 +58,7 @@ public class RPHashStream implements StreamClusterer {
 			executor.execute(r);
 			return is.count;
 		}
+		*/
 
 //		long hash[];
 		Centroid c = new Centroid(vec);
@@ -156,6 +158,7 @@ public class RPHashStream implements StreamClusterer {
 	}
 
 	public List<float[]> getCentroidsOfflineStep() {
+		/*
 		if (parallel) {
 			executor.shutdown();
 			try {
@@ -165,6 +168,7 @@ public class RPHashStream implements StreamClusterer {
 			}
 			// executor = Executors.newFixedThreadPool(getProcessors());
 		}
+		*/
 
 		centroids = new ArrayList<float[]>();
 		List<Centroid> cents = is.getTop();
@@ -183,13 +187,14 @@ public class RPHashStream implements StreamClusterer {
 		// add to frequent itemset the hashed Decoded randomly projected vector
 		Iterator<float[]> vecs = so.getVectorIterator();
 		while (vecs.hasNext()) {
+			/*
 			if (parallel) {
 				float[] vec = vecs.next();
 				executor.execute(new VectorLevelConcurrency(vec, so,
 						lshfuncs, vartracker, is));
 			} else {
-				addVectorOnlineStep(vecs.next());
-			}
+			*/
+			addVectorOnlineStep(vecs.next());
 		}
 	}
 

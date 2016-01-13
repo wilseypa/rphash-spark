@@ -1,5 +1,6 @@
 package edu.uc.rphash.Readers;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -15,7 +16,7 @@ import edu.uc.rphash.decoders.Spherical;
 import edu.uc.rphash.tests.ClusterGenerator;
 import edu.uc.rphash.tests.StatTests;
 
-public class SimpleArrayReader implements RPHashObject {
+public class SimpleArrayReader implements RPHashObject, Serializable {
 
 	List<float[]> data;
 	Integer dim = null;

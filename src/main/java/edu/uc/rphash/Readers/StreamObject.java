@@ -12,17 +12,30 @@ import java.io.InputStreamReader;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.Reader;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+// import java.util.concurrent.Callable;
+// import java.util.concurrent.ExecutionException;
+// import java.util.concurrent.ExecutorService;
+// import java.util.concurrent.Future;
+// import java.util.concurrent.TimeUnit;
+// import java.util.concurrent.TimeoutException;
 import java.util.zip.GZIPInputStream;
+
+import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.StorageLevels;
+import org.apache.spark.api.java.function.FlatMapFunction;
+import org.apache.spark.api.java.function.Function;
+import org.apache.spark.streaming.Duration;
+import org.apache.spark.streaming.api.java.JavaDStream;
+import org.apache.spark.streaming.api.java.JavaPairDStream;
+import org.apache.spark.streaming.api.java.JavaReceiverInputDStream;
+import org.apache.spark.streaming.api.java.JavaStreamingContext;
+import org.apache.spark.api.java.function.PairFunction;
 
 import edu.uc.rphash.decoders.Decoder;
 import edu.uc.rphash.decoders.Leech;
@@ -31,14 +44,7 @@ import edu.uc.rphash.decoders.Spherical;
 import edu.uc.rphash.tests.StatTests;
 import edu.uc.rphash.tests.TestUtil;
 
-import org.apache.spark.SparkConf;
-import org.apache.spark.streaming.Duration;
-import org.apache.spark.streaming.api.java.JavaDStream;
-import org.apache.spark.streaming.api.java.JavaStreamingContext;
-import org.apache.spark.api.java.function.FlatMapFunction;
-import org.apache.spark.api.java.function.Function;
-
-public class StreamObject implements RPHashObject, Iterator<float[]> {
+public class StreamObject implements RPHashObject, Serializable, Iterator<float[]> {
 	public List<float[]> data;
 	int numProjections;
 	int decoderMultiplier;
@@ -56,7 +62,7 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 	Decoder dec;
 	float decayrate=0;
 
-	ExecutorService executor;
+	// ExecutorService executor;
 	InputStream inputStream;
 	boolean raw;
 
@@ -70,6 +76,7 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 	// --num of data( == n)
 	// --num dimensions
 	// --input random seed;
+	/*
 	public StreamObject(PipedInputStream istream, int k, int dim,
 			ExecutorService executor) throws IOException {
 		this.executor = executor;
@@ -88,6 +95,7 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 		this.centroids = new ArrayList<float[]>();
 		this.topIDs = new ArrayList<Long>();
 	}
+	*/
 
 	boolean filereader = false;
 
@@ -109,8 +117,8 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 		    	  return floatVector;
 		      }
 		    });
-		*/
-
+		    */
+		
 		// filereader = true;
 		// if (this.f.endsWith("gz"))
 		// inputStream = new BufferedReader(new InputStreamReader(
