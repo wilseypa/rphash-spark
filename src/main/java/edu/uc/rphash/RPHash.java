@@ -11,6 +11,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.StorageLevels;
@@ -170,40 +171,57 @@ public class RPHash {
 		JavaStreamingContext jssc = new JavaStreamingContext(conf, new Duration(streamDuration));
 		
 		JavaReceiverInputDStream<String> stringData = jssc.socketTextStream(hostname, port, StorageLevels.MEMORY_AND_DISK_SER);
-		JavaDStream<float[]> dataStream = stringData.map(new Function<String, float[]>() {
-			public float[] call(String s) {
+		JavaDStream<List<Float>> dataStream = stringData.map(new Function<String, List<Float>>() {
+			public List<Float> call(String s) {
 				List<String> stringVector = Arrays.asList(s.split(","));
 				List<Float> floatVector = new ArrayList<>();
 		    	 for (String element : stringVector)
 		    		 floatVector.add(Float.valueOf(element));
-		    	 float[] nxt = new float[floatVector.size()];
-		    	 int j = 0;
-		    	 for (Float f : floatVector)
-		    		 nxt[j++] = (f != null ? f : Float.NaN);
-		    	 return nxt;
+		    	 //float[] nxt = new float[floatVector.size()];
+		    	 //int j = 0;
+		    	 //for (Float f : floatVector)
+		    		 //nxt[j++] = (f != null ? f : Float.NaN);
+		    	 return floatVector;
 			}			
 		});
 		
-		JavaPairDStream<float[], Long> vecCountPair = dataStream.mapToPair(
-				new PairFunction<float[], float[], Long>() {
+		
+		JavaPairDStream<List<Float>, Long> vecCountPair = dataStream.mapToPair(
+				new PairFunction<List<Float>, List<Float>, Long>() {
+					int i = 0;
 					@Override
-					public Tuple2<float[], Long> call(float[] vec) {
+					public Tuple2<List<Float>, Long> call(List<Float> listVec) {
+						i++;
+						float[] vec = new float[listVec.size()];
+						int j = 0;
+						for (Float f : listVec)
+							vec[j++] = (f != null ? f : Float.NaN);	
 						long count = ((StreamClusterer) clu).addVectorOnlineStep(vec);
-						return new Tuple2<float[], Long>(vec, count);
+						if (i % streamDuration == 0) {
+							List<float[]> cents = ((StreamClusterer) clu).getCentroidsOfflineStep();
+							for (float[] centroid : cents)
+								System.out.println(Arrays.toString(centroid));
+							
+							//TestUtil.writeFile(new File(outputFile + "_round" + i + ".txt"), cents, raw);
+						}
+						return new Tuple2<List<Float>, Long>(listVec, count);
 					}
 					
 				});
-	
-		vecCountPair.foreachRDD(new Function<JavaPairRDD<float[], Long>, Void>() {
+		
+		/*
+		vecCountPair.foreachRDD(new Function<JavaPairRDD<List<Float>, Long>, Void>() {
 			int i = 0;
-			public Void call(JavaPairRDD<float[], Long> vecCount) {
-				List<float[]> cents = ((StreamClusterer) clu).getCentroidsOfflineStep();
+			public Void call(JavaPairRDD<List<Float>, Long> vecCount) {
+				List<List<Float>> cents = getCentroidAsList(runitems);
 				i++;
 				TestUtil.writeFile(new File(outputFile + "_round" + i + ".txt"), cents, raw);
 				return null;			
 			}
 		});
+		*/
 		
+		vecCountPair.print();
 		jssc.start();
 		jssc.awaitTermination();	
 	}
@@ -368,5 +386,20 @@ public class RPHash {
 			args[i] = truncatedArgs.get(i);
 		return cmdMap;
 	}
+	
+	/*
+	public static List<List<Float>> getCentroidAsList(List<Clusterer> runitems) {
+		Iterator<Clusterer> anotherCluit = runitems.iterator();
+		Clusterer anotherClu = anotherCluit.next();
+		List<List<Float>> centroidsAsList = new ArrayList<>();
+		List<float[]> centroidArrayList = ((StreamClusterer) anotherClu).getCentroidsOfflineStep();
+		for (float[] centroid : centroidArrayList) {
+			Float[] inputBoxed = ArrayUtils.toObject(centroid);
+			List<Float> inputAsList = Arrays.asList(inputBoxed);
+			centroidsAsList.add(inputAsList);
+		}
+		return centroidsAsList;
+	}
+	*/
 
 }

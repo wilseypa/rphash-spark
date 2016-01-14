@@ -1,10 +1,14 @@
 package edu.uc.rphash;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+
+import org.apache.commons.lang.ArrayUtils;
+
 import java.io.Serializable;
 // import java.util.concurrent.ExecutorService;
 // import java.util.concurrent.Executors;
@@ -182,7 +186,7 @@ public class RPHashStream implements StreamClusterer, Serializable {
 
 		return centroids;
 	}
-
+	
 	public void run() {
 		// add to frequent itemset the hashed Decoded randomly projected vector
 		Iterator<float[]> vecs = so.getVectorIterator();
