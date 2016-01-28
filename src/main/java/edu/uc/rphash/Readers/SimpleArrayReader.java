@@ -7,6 +7,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.spark.api.java.JavaRDD;
+
 import edu.uc.rphash.decoders.Decoder;
 import edu.uc.rphash.decoders.E8;
 import edu.uc.rphash.decoders.Leech;
@@ -15,10 +17,12 @@ import edu.uc.rphash.decoders.PStableDistribution;
 import edu.uc.rphash.decoders.Spherical;
 import edu.uc.rphash.tests.ClusterGenerator;
 import edu.uc.rphash.tests.StatTests;
+import edu.uc.rphash.tests.TestUtil;
 
 public class SimpleArrayReader implements RPHashObject, Serializable {
 
 	List<float[]> data;
+	JavaRDD<List<Float>> dataset;
 	Integer dim = null;
 	int numProjections;
 	int decoderMultiplier;
@@ -57,7 +61,7 @@ public class SimpleArrayReader implements RPHashObject, Serializable {
 	
 	
 	
-	public SimpleArrayReader(List<float[]> X, int k) {
+	public SimpleArrayReader(JavaRDD<List<Float>> X, int k) {
 
 		this.randomSeed = DEFAULT_NUM_RANDOM_SEED;
 		this.hashmod = DEFAULT_HASH_MODULUS;
@@ -65,9 +69,9 @@ public class SimpleArrayReader implements RPHashObject, Serializable {
 		this.dec = new MultiDecoder(this.decoderMultiplier*DEFAULT_INNER_DECODER.getDimensionality(),DEFAULT_INNER_DECODER);
 		this.numProjections = DEFAULT_NUM_PROJECTIONS;
 		this.numBlur = DEFAULT_NUM_BLUR;
-		this.data = X;
-		if(data!=null)
-			this.dim = data.get(0).length;
+		this.dataset = X;
+		if(dataset!=null)
+			this.dim = dataset.first().size();
 		else 
 			this.dim = null;
 		this.k = k;
@@ -156,8 +160,9 @@ public class SimpleArrayReader implements RPHashObject, Serializable {
 		this.decayrate = 0;
 	}
 
-	public Iterator<float[]> getVectorIterator() {
-		return data.iterator();
+	public Iterator<List<Float>> getVectorIterator() {
+		List<List<Float>> datasetAsList = dataset.take((int) dataset.count());
+		return datasetAsList.iterator();
 	}
 
 	@Override
@@ -258,8 +263,8 @@ public class SimpleArrayReader implements RPHashObject, Serializable {
 	}
 
 	@Override
-	public void setVariance(List<float[]> data) {
-		dec.setVariance(StatTests.varianceSample(data, .01f));
+	public void setVariance(JavaRDD<List<Float>> dataset) {
+		dec.setVariance(StatTests.varianceSample(dataset, .01f));
 	}
 
 	@Override

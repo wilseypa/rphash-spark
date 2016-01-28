@@ -5,6 +5,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.spark.api.java.JavaRDD;
+
 import edu.uc.rphash.Readers.RPHashObject;
 import edu.uc.rphash.Readers.SimpleArrayReader;
 import edu.uc.rphash.tests.Agglomerative;
@@ -20,11 +22,11 @@ public class RPHashConsensusRP  implements Clusterer{
 	int d;
 	RPHashObject so;
 	
-	public RPHashConsensusRP(List<float[]> data,int k){
+	public RPHashConsensusRP(JavaRDD<List<Float>> dataset, int k){
 
 		this.k =k;
-		this.d = data.get(0).length;
-		this.so = new SimpleArrayReader(data,k);
+		this.d = dataset.first().size();
+		this.so = new SimpleArrayReader(dataset,k);
 	}
 	
 	public RPHashConsensusRP(RPHashObject o) {
@@ -69,6 +71,7 @@ public class RPHashConsensusRP  implements Clusterer{
 	}
 	
 	public static GenerateData gen;
+	/*
 	public static void main(String[] args){
 		
 		int k = 20;
@@ -86,6 +89,7 @@ public class RPHashConsensusRP  implements Clusterer{
 		System.gc();
 		
 	}
+	*/
 
 	@Override
 	public RPHashObject getParam() {

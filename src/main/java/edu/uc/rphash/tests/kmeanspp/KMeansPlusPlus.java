@@ -24,6 +24,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.spark.api.java.JavaRDD;
+
 import edu.uc.rphash.Clusterer;
 import edu.uc.rphash.Readers.RPHashObject;
 import edu.uc.rphash.Readers.SimpleArrayReader;
@@ -541,6 +543,7 @@ public class KMeansPlusPlus<T extends Clusterable<T>> implements Clusterer {
 //       this.emptyStrategy = emptyStrategy;
 //   }
 	  final private List<float[]> data;
+	  JavaRDD<List<Float>> dataset;
 	  
     public KMeansPlusPlus(List<float[]> data,int k) {
     	random  =new Random();
@@ -593,7 +596,7 @@ public class KMeansPlusPlus<T extends Clusterable<T>> implements Clusterer {
 	@Override
 	public RPHashObject getParam() {
 		
-		return new SimpleArrayReader(data, k);
+		return new SimpleArrayReader(dataset, k);
 	}
 	public static void main(String[] args){
 		GenerateData gen = new GenerateData(3,5000,2,.1f);

@@ -6,6 +6,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.spark.api.java.JavaRDD;
+
 import edu.uc.rphash.Readers.RPHashObject;
 import edu.uc.rphash.Readers.RPVector;
 import edu.uc.rphash.Readers.SimpleArrayReader;
@@ -33,7 +35,7 @@ public class RPHashSimple implements Clusterer {
 
 		// create our LSH Machine
 		HashAlgorithm hal = new MurmurHash(so.getHashmod());
-		Iterator<float[]> vecs = so.getVectorIterator();
+		Iterator<List<Float>> vecs = so.getVectorIterator();
 		if (!vecs.hasNext())
 			return so;
 		
@@ -49,7 +51,11 @@ public class RPHashSimple implements Clusterer {
 		// add to frequent itemset the hashed Decoded randomly projected vector
 
 		while (vecs.hasNext()) {
-			float[] vec = vecs.next();
+			List<Float> vecAsList = vecs.next();
+			float[] vec = new float[vecAsList.size()];
+			int j = 0;
+			for (Float f : vecAsList)
+				vec[j++] = (f != null ? f : Float.NaN);
 			hash = lshfunc.lshHash(vec);
 			is.add(hash);
 			//vec.id.add(hash);
@@ -65,10 +71,14 @@ public class RPHashSimple implements Clusterer {
 	 */
 	public RPHashObject reduce() {
 
-		Iterator<float[]> vecs = so.getVectorIterator();
+		Iterator<List<Float>> vecs = so.getVectorIterator();
 		if (!vecs.hasNext())
 			return so;
-		float[] vec = vecs.next();
+		List<Float> vecAsList = vecs.next();
+		float[] vec = new float[vecAsList.size()];
+		int j = 0;
+		for (Float f : vecAsList)
+			vec[j++] = (f != null ? f : Float.NaN);
 		int blurValue = so.getNumBlur();
 		
 		HashAlgorithm hal = new MurmurHash(so.getHashmod());
@@ -94,7 +104,7 @@ public class RPHashSimple implements Clusterer {
 					}
 				}
 			}
-			vec = vecs.next();
+			vecAsList = vecs.next();
 		}
 
 		
@@ -106,15 +116,15 @@ public class RPHashSimple implements Clusterer {
 	private List<float[]> centroids = null;
 	private RPHashObject so;
 
-	public RPHashSimple(List<float[]> data, int k) {
-		variance = StatTests.varianceSample(data, .01f);
-		so = new SimpleArrayReader(data, k);
+	public RPHashSimple(JavaRDD<List<Float>> dataset, int k) {
+		variance = StatTests.varianceSample(dataset, .01f);
+		so = new SimpleArrayReader(dataset, k);
 
 	}
 
-	public RPHashSimple(List<float[]> data, int k, int times, int rseed) {
-		variance = StatTests.varianceSample(data, .001f);
-		so = new SimpleArrayReader(data, k);
+	public RPHashSimple(JavaRDD<List<Float>> dataset, int k, int times, int rseed) {
+		variance = StatTests.varianceSample(dataset, .001f);
+		so = new SimpleArrayReader(dataset, k);
 
 	}
 
@@ -143,6 +153,7 @@ public class RPHashSimple implements Clusterer {
 		centroids = so.getCentroids();//new Kmeans(so.getk(),so.getCentroids()).getCentroids();
 	}
 
+	/*
 	public static void main(String[] args) {
 
 		int k = 10;
@@ -167,6 +178,7 @@ public class RPHashSimple implements Clusterer {
 		}
 
 	}
+	*/
 
 	@Override
 	public RPHashObject getParam() {

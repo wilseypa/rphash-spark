@@ -3,6 +3,8 @@ package edu.uc.rphash.Readers;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.spark.api.java.JavaRDD;
+
 import edu.uc.rphash.decoders.Decoder;
 import edu.uc.rphash.decoders.Leech;
 import edu.uc.rphash.decoders.LeechMulti;
@@ -23,7 +25,7 @@ public interface RPHashObject {
 	long getHashmod();
 	int getNumBlur();
 	
-	Iterator<float[]> getVectorIterator();
+	Iterator<List<Float>> getVectorIterator();
 	List<float[]> getCentroids( );
 	
 	List<Long> getPreviousTopID();
@@ -43,7 +45,7 @@ public interface RPHashObject {
 	void setDecoderType(Decoder dec);
 	Decoder getDecoderType();
 	String toString();
-	void setVariance(List<float[]> data);
+	void setVariance(JavaRDD<List<Float>> dataset);
 	void setDecayRate(float parseFloat);
 	float getDecayRate();
 

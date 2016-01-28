@@ -27,6 +27,7 @@ import java.util.zip.GZIPInputStream;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.StorageLevels;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
@@ -333,8 +334,8 @@ public class StreamObject implements RPHashObject, Serializable, Iterator<float[
 	}
 
 	@Override
-	public void setVariance(List<float[]> data) {
-		dec.setVariance(StatTests.varianceSample(data, .01f));
+	public void setVariance(JavaRDD<List<Float>> dataset) {
+		dec.setVariance(StatTests.varianceSample(dataset, .01f));
 	}
 
 	public void setDecayRate(float parseFloat) {

@@ -15,6 +15,7 @@ import org.apache.commons.lang.ArrayUtils;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.StorageLevels;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
@@ -78,14 +79,27 @@ public class RPHash {
 		String filename = args[0];
 		int k = Integer.parseInt(args[1]);
 		String outputFile = args[2];
-		String hostname = args[3];
-		int port = Integer.parseInt(args[4]);
+		//String hostname = args[3];
+		//int port = Integer.parseInt(args[4]);
 		
 		boolean raw = false;
 
 		if (args.length == 3) {
-			data = TestUtil.readFile(filename, raw);
-			RPHashSimple clusterer = new RPHashSimple(data, k);
+			SparkConf conf = new SparkConf().setMaster("local[4]").setAppName("RPHashSimple_Spark");
+			JavaSparkContext sc = new JavaSparkContext(conf);
+			JavaRDD<String> dataFileAsString = sc.textFile("/home/anindya/Desktop/HAR.csv");
+			JavaRDD<List<Float>> dataset = dataFileAsString.map(new Function<String, List<Float>>() {
+				public List<Float> call(String s) {
+					List<String> stringVector = Arrays.asList(s.split(","));
+					List<Float> floatVector = new ArrayList<>();
+					for (String element : stringVector)
+						floatVector.add(Float.valueOf(element));
+					return floatVector;
+				}
+			});
+			//data = TestUtil.readFile(filename, raw);
+			long n = dataset.count();
+			RPHashSimple clusterer = new RPHashSimple(dataset, k);
 			TestUtil.writeFile(new File(outputFile + "."
 					+ clusterer.getClass().getName()),
 					clusterer.getCentroids(), raw);
@@ -94,22 +108,26 @@ public class RPHash {
 		List<String> truncatedArgs = new ArrayList<String>();
 		Map<String, String> taggedArgs = argsUI(args, truncatedArgs);
 		List<Clusterer> runs;
-		int streamDuration = Integer.parseInt(taggedArgs.get("streamduration"));  // For now, this works only for StreamingRPHash.
+		//int streamDuration = Integer.parseInt(taggedArgs.get("streamduration"));  // For now, this works only for StreamingRPHash.
+		
+		/*
 		if (taggedArgs.containsKey("raw")) {
 			raw = Boolean.getBoolean(taggedArgs.get("raw"));
-			runs = runConfigs(truncatedArgs, taggedArgs, data, filename, streamDuration, true);
+			runs = runConfigs(truncatedArgs, taggedArgs, data, dataset, filename, streamDuration, true);
 		} else {
-			runs = runConfigs(truncatedArgs, taggedArgs, data, filename, streamDuration, false);
+			runs = runConfigs(truncatedArgs, taggedArgs, data, dataset, filename, streamDuration, false);
 		}
-
+		*/
+/*
 		if (taggedArgs.containsKey("streamduration")) {
 			System.out.println(taggedArgs.toString());
 			runStream(runs, filename, outputFile, streamDuration, k, hostname, port, raw);
 		}
-
+*/
 		// run remaining, read file into ram
-		data = TestUtil.readFile(filename, raw);
-		runner(runs, outputFile, raw);
+		
+		//data = TestUtil.readFile(filename, raw);
+		//runner(runs, outputFile, raw);
 
 	}
 
@@ -165,6 +183,7 @@ public class RPHash {
 
 		Iterator<Clusterer> cluit = runitems.iterator();
 		Clusterer clu = cluit.next();
+		int numVectorsPerBatch = 4;
 		// needs work, just use for both to be more accurate
 		// long avgtimeToRead = 0;// computeAverageReadTime(streamDuration,f,streamDuration);
 		// Runtime rt = Runtime.getRuntime();
@@ -183,7 +202,11 @@ public class RPHash {
 			}			
 		});
 		
-		JavaPairDStream<List<Float>, Long> vecCountPair = dataStream.mapToPair(
+		JavaDStream<Integer> eachVec = dataStream.map(v -> 1);
+		JavaDStream<Integer> vecCount = eachVec.reduce((a, b) -> a + b);	
+		
+
+		JavaPairDStream<List<Float>, Long> vecIsCountPair = dataStream.mapToPair(
 				new PairFunction<List<Float>, List<Float>, Long>() {
 					@Override
 					public Tuple2<List<Float>, Long> call(List<Float> listVec) {
@@ -193,10 +216,8 @@ public class RPHash {
 							vec[j++] = (f != null ? f : Float.NaN);	
 						long count = ((StreamClusterer) clu).addVectorOnlineStep(vec);
 						return new Tuple2<List<Float>, Long>(listVec, count);
-					}
-					
+					}	
 				});
-		
 		
 		/*
 		dataStream.foreachRDD(new Function<JavaRDD<List<Float>>, Void>() {
@@ -219,14 +240,14 @@ public class RPHash {
 		});
 		*/
 		
-		vecCountPair.print();
+		vecCount.print();
 		jssc.start();
 		jssc.awaitTermination();	
 	}
 	
 
 	public static List<Clusterer> runConfigs(List<String> untaggedArgs,
-			Map<String, String> taggedArgs, List<float[]> data, String f,
+			Map<String, String> taggedArgs, List<float[]> data, JavaRDD<List<Float>> dataset, String f,
 			int streamDuration, boolean raw) throws IOException {
 
 		List<Clusterer> runitems = new ArrayList<>();
@@ -237,7 +258,7 @@ public class RPHash {
 
 		int k = Integer.parseInt(untaggedArgs.get(1));
 		
-		RPHashObject o = new SimpleArrayReader(data, k);
+		RPHashObject o = new SimpleArrayReader(dataset, k);
 		StreamObject so = new StreamObject(f, k, streamDuration, raw);
 
 		if (taggedArgs.containsKey("numprojections")) {

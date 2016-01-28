@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.spark.api.java.JavaRDD;
 
 import java.io.Serializable;
 // import java.util.concurrent.ExecutorService;
@@ -112,8 +113,8 @@ public class RPHashStream implements StreamClusterer, Serializable {
 		init();
 	}
 
-	public RPHashStream(List<float[]> data, int k) {
-		so = new SimpleArrayReader(data, k);
+	public RPHashStream(JavaRDD<List<Float>> dataset, int k) {
+		so = new SimpleArrayReader(dataset, k);
 		/*
 		if (parallel)
 			this.processors = Runtime.getRuntime().availableProcessors();

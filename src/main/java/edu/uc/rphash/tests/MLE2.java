@@ -11,6 +11,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
 
+import org.apache.spark.api.java.JavaRDD;
+
 /**
  * @author lee
  * learns mle model with T topics from words x docs counts data
@@ -57,6 +59,7 @@ public class MLE2 implements Clusterer {
 	public float[][] td;
 	public float[][] wt;
 	List<float [] >data;
+	JavaRDD<List<Float>> dataset;
 	
 	public MLE2(List<float[]> counts, int T,float epsilon)
 	{
@@ -297,7 +300,7 @@ public class MLE2 implements Clusterer {
 
 	@Override
 	public RPHashObject getParam() {
-		return new SimpleArrayReader(this.data, T);
+		return new SimpleArrayReader(this.dataset, T);
 	}
 
 }

@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.spark.api.java.JavaRDD;
+
 import edu.uc.rphash.Clusterer;
 import edu.uc.rphash.Readers.RPHashObject;
 import edu.uc.rphash.Readers.SimpleArrayReader;
@@ -20,6 +22,7 @@ public class Kmeans  implements Clusterer, Serializable{
 	int k;
 	int n;
 	List<float[]> data;
+	JavaRDD<List<Float>> dataset;
 	int projdim;
 	
 	List<float[]> means; 
@@ -170,7 +173,7 @@ public class Kmeans  implements Clusterer, Serializable{
 	@Override
 	public RPHashObject getParam() {
 
-		return new SimpleArrayReader(data, k);
+		return new SimpleArrayReader(dataset, k);
 	}
 
 

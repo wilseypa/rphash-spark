@@ -3,6 +3,8 @@ package edu.uc.rphash.tests;
 
 import java.util.List;
 
+import org.apache.spark.api.java.JavaRDD;
+
 import edu.uc.rphash.RPHashSimple;
 
 
@@ -15,6 +17,7 @@ public class TestRPhash {
 	static void testRPHash(int k, int n,int d,float variance,int projdim){
 		
 		GenerateData gen = new GenerateData(k,n/k,d,variance,true,1.f);
+		JavaRDD<List<Float>> dataset = null;
 		
 		System.out.print(k+":"+n+":"+d+":"+variance+":"+projdim+"\t");
 		System.out.print(StatTests.PR(gen.medoids(),gen)+":\t");
@@ -31,7 +34,7 @@ public class TestRPhash {
 
 
 		
-		RPHashSimple rph = new RPHashSimple(gen.data(),k);
+		RPHashSimple rph = new RPHashSimple(dataset,k);
 		
 		
 		startTime = System.nanoTime();

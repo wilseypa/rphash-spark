@@ -5,6 +5,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.spark.api.java.JavaRDD;
+
 import edu.uc.rphash.Readers.RPHashObject;
 import edu.uc.rphash.Readers.SimpleArrayReader;
 import edu.uc.rphash.frequentItemSet.KHHCountMinSketch;
@@ -48,14 +50,14 @@ public class RPHashAltStream implements Clusterer, Runnable {
 	private List<float[]> centroids = null;
 	private RPHashObject so;
 
-	public RPHashAltStream(List<float[]> data, int k) {
-		variance = StatTests.varianceSample(data, .01f);
-		so = new SimpleArrayReader(data, k);
+	public RPHashAltStream(JavaRDD<List<Float>> dataset, int k) {
+		variance = StatTests.varianceSample(dataset, .01f);
+		so = new SimpleArrayReader(dataset, k);
 	}
 
-	public RPHashAltStream(List<float[]> data, int k, int times, int rseed) {
-		variance = StatTests.varianceSample(data, .01f);
-		so = new SimpleArrayReader(data, k);
+	public RPHashAltStream(JavaRDD<List<Float>> dataset, int k, int times, int rseed) {
+		variance = StatTests.varianceSample(dataset, .01f);
+		so = new SimpleArrayReader(dataset, k);
 	}
 
 	public RPHashAltStream(RPHashObject so) {
@@ -83,6 +85,7 @@ public class RPHashAltStream implements Clusterer, Runnable {
 		centroids = new Kmeans(so.getk(), centroids).getCentroids();
 	}
 
+	/*
 	public static void main(String[] args) {
 
 		int k = 10;
@@ -105,6 +108,7 @@ public class RPHashAltStream implements Clusterer, Runnable {
 			}
 		}
 	}
+	*/
 
 	@Override
 	public RPHashObject getParam() {

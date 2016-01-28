@@ -7,6 +7,8 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.spark.api.java.JavaRDD;
+
 import edu.uc.rphash.Readers.StreamObject;
 import edu.uc.rphash.util.AtomicFloat;
 
@@ -111,16 +113,16 @@ public class StatTests implements Serializable {
 	
 	
 	
-	public static float varianceSample(List<float[]> data,float sampRatio){
+	public static float varianceSample(JavaRDD<List<Float>> dataset,float sampRatio){
 		float n = 0;
 		float mean = 0;
 		float M2 = 0;
 		Random r = new Random();
 		
-		int len = data.size();
+		int len = (int) dataset.count();
 		
 		for(int i = 0 ; i<sampRatio*len; i++){
-			float[] row = data.get(r.nextInt(len));
+			List<Float> row = dataset.takeSample(true, 1).get(0);
 			
 			for(float x : row){
 				n++;
