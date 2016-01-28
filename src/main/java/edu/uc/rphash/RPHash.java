@@ -98,7 +98,7 @@ public class RPHash {
 				}
 			});
 			//data = TestUtil.readFile(filename, raw);
-			long n = dataset.count();
+			List<Float> firstVec = dataset.first();
 			RPHashSimple clusterer = new RPHashSimple(dataset, k);
 			TestUtil.writeFile(new File(outputFile + "."
 					+ clusterer.getClass().getName()),

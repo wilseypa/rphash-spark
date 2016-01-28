@@ -1,11 +1,13 @@
 package edu.uc.rphash;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.spark.api.java.JavaRDD;
 
 import edu.uc.rphash.Readers.RPHashObject;
@@ -42,25 +44,28 @@ public class RPHashSimple implements Clusterer {
 		Decoder dec = so.getDecoderType();
 		Projector p = new DBFriendlyProjection(so.getdim(),
 				dec.getDimensionality(), so.getRandomSeed());
-		List<float[]> noise = LSH.genNoiseTable(dec.getDimensionality(),1, new Random(), dec.getErrorRadius()/dec.getDimensionality());
+		List<float[]> noise = LSH.genNoiseTable(so.getdim(), 2, new Random(), dec.getErrorRadius()/dec.getDimensionality());
 		LSH lshfunc = new LSH(dec, p, hal,noise);
 		long hash;
 		int k = (int) (so.getk()*Math.log(so.getk()));
 
-		ItemSet<Long> is = new KHHCountMinSketch<Long>(k);
+		ItemSet<Long> is = new SimpleFrequentItemSet<Long>(k);
 		// add to frequent itemset the hashed Decoded randomly projected vector
 
 		while (vecs.hasNext()) {
 			List<Float> vecAsList = vecs.next();
+			
 			float[] vec = new float[vecAsList.size()];
 			int j = 0;
 			for (Float f : vecAsList)
 				vec[j++] = (f != null ? f : Float.NaN);
+			System.out.println(vec);
 			hash = lshfunc.lshHash(vec);
 			is.add(hash);
 			//vec.id.add(hash);
 		}
-		so.setPreviousTopID(is.getTop());		
+		so.setPreviousTopID(is.getTop());
+		System.out.println(is.getTop());
 //		for(long l: is.getCounts())System.out.print(l+", ");
 		return so;
 	}
@@ -79,29 +84,33 @@ public class RPHashSimple implements Clusterer {
 		int j = 0;
 		for (Float f : vecAsList)
 			vec[j++] = (f != null ? f : Float.NaN);
-		int blurValue = so.getNumBlur();
 		
 		HashAlgorithm hal = new MurmurHash(so.getHashmod());
 		Decoder dec = so.getDecoderType();
 		
 		Projector p = new DBFriendlyProjection(so.getdim(),
 				dec.getDimensionality(), so.getRandomSeed());
-		List<float[]> noise = LSH.genNoiseTable(dec.getDimensionality(),1, new Random(), dec.getErrorRadius()/dec.getDimensionality());
+		List<float[]> noise = LSH.genNoiseTable(so.getdim(), 2, new Random(), dec.getErrorRadius()/(dec.getDimensionality()*dec.getDimensionality()));
 		LSH lshfunc = new LSH(dec, p, hal,noise);
 		long hash[];
 		
 		ArrayList<Centroid> centroids = new ArrayList<Centroid>();
 		for (long id : so.getPreviousTopID())
 			centroids.add(new Centroid(so.getdim(), id));
-
+		System.out.println(so.getPreviousTopID() + "=====================================++++++++++++++++++++++++++++++++++");
+		
+		int s = 0;
 		while (vecs.hasNext()) {
-			hash = lshfunc.lshHashRadiusNo2Hash(vec,blurValue);
+			hash = lshfunc.lshHashRadius(vec,noise);
 			for (Centroid cent : centroids){
+				int b = 0;
 				for(long h:hash){
 					if(cent.ids.contains(h)){
 						cent.updateVec(vec);
+						if(b!=0)s++;
 						break;
 					}
+					b++;
 				}
 			}
 			vecAsList = vecs.next();
@@ -143,6 +152,14 @@ public class RPHashSimple implements Clusterer {
 	public List<float[]> getCentroids() {
 		if (centroids == null)
 			run();
+		List<List<Float>> centroidsAsList = new ArrayList<>();
+		for (float[] centroid : centroids) {
+			Float[] inputBoxed = ArrayUtils.toObject(centroid);
+			List<Float> inputAsList = Arrays.asList(inputBoxed);
+			centroidsAsList.add(inputAsList);
+		}
+		System.out.println(centroidsAsList + "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
+		
 		return new Kmeans(so.getk(),centroids).getCentroids();
 	}
 
@@ -150,7 +167,9 @@ public class RPHashSimple implements Clusterer {
 		
 		map();
 		reduce();
-		centroids = so.getCentroids();//new Kmeans(so.getk(),so.getCentroids()).getCentroids();
+		centroids = so.getCentroids();
+		System.out.println(so.getPreviousTopID() + "=====================================================================");
+		//new Kmeans(so.getk(),so.getCentroids()).getCentroids();
 	}
 
 	/*
