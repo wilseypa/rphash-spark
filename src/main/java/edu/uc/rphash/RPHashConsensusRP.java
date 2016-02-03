@@ -1,19 +1,14 @@
 package edu.uc.rphash;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
-
-import org.apache.spark.api.java.JavaRDD;
 
 import edu.uc.rphash.Readers.RPHashObject;
 import edu.uc.rphash.Readers.SimpleArrayReader;
-import edu.uc.rphash.tests.Agglomerative;
-import edu.uc.rphash.tests.GenerateData;
-import edu.uc.rphash.tests.Kmeans;
 import edu.uc.rphash.tests.StatTests;
-import edu.uc.rphash.tests.TestUtil;
+import edu.uc.rphash.tests.clusterers.Agglomerative;
+import edu.uc.rphash.tests.generators.GenerateData;
+import edu.uc.rphash.util.VectorUtil;
 
 public class RPHashConsensusRP  implements Clusterer{
 
@@ -22,11 +17,11 @@ public class RPHashConsensusRP  implements Clusterer{
 	int d;
 	RPHashObject so;
 	
-	public RPHashConsensusRP(JavaRDD<List<Float>> dataset, int k){
+	public RPHashConsensusRP(List<float[]> data,int k){
 
 		this.k =k;
-		this.d = dataset.first().size();
-		this.so = new SimpleArrayReader(dataset,k);
+		this.d = data.get(0).length;
+		this.so = new SimpleArrayReader(data,k);
 	}
 	
 	public RPHashConsensusRP(RPHashObject o) {
@@ -71,7 +66,6 @@ public class RPHashConsensusRP  implements Clusterer{
 	}
 	
 	public static GenerateData gen;
-	/*
 	public static void main(String[] args){
 		
 		int k = 20;
@@ -83,13 +77,12 @@ public class RPHashConsensusRP  implements Clusterer{
 		long startTime = System.nanoTime();
 		rphit.getCentroids();
 		long duration = (System.nanoTime() - startTime);
-		List<float[]> aligned  = TestUtil.alignCentroids(rphit.getCentroids(),gen.medoids());
+		List<float[]> aligned  = VectorUtil.alignCentroids(rphit.getCentroids(),gen.medoids());
 		System.out.println(StatTests.PR(aligned,gen)+":"+duration/1000000000f);
 		System.out.print("\n");
 		System.gc();
 		
 	}
-	*/
 
 	@Override
 	public RPHashObject getParam() {

@@ -1,18 +1,17 @@
 package edu.uc.rphash.decoders;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
 import edu.uc.rphash.standardhash.MurmurHash;
-import edu.uc.rphash.tests.TestUtil;
+import edu.uc.rphash.util.VectorUtil;
 
 /** Spherical LSH Decoder based on SLSH (lgpl)
  * @author lee
  *
  */
-public class Spherical implements Decoder, Serializable {
+public class Spherical implements Decoder {
 	int HashBits = 64;
 	final List<List<float[]>> vAll; // vAll[i][j] is the vector $A_i \tilde v_j$ from
 				// the article.
@@ -227,11 +226,11 @@ public class Spherical implements Decoder, Serializable {
 					p2[k] = (float) (p1[k]+r.nextGaussian()*((float)i/100f));
 				}
 				
-				distavg+=TestUtil.distance(p1,p2);
+				distavg+=VectorUtil.distance(p1,p2);
 				MurmurHash mh = new MurmurHash(Long.MAX_VALUE);
-				long[] hp1 = sp.Hash(TestUtil.normalize(p1));
-				long[] hp2 = sp.Hash(TestUtil.normalize(p2));
-				boolean test = false;
+				long[] hp1 = sp.Hash(VectorUtil.normalize(p1));
+				long[] hp2 = sp.Hash(VectorUtil.normalize(p2));
+//				boolean test = false;
 //				for(int k = 0; k< hp1.length;k++)
 //				{
 //					if(hp1[k]==hp2[k]){
@@ -250,6 +249,11 @@ public class Spherical implements Decoder, Serializable {
 	@Override
 	public void setVariance(Float parameterObject) {
 		variance = parameterObject;
+	}
+	
+	@Override
+	public boolean selfScaling() {
+		return true;
 	}
 
 }

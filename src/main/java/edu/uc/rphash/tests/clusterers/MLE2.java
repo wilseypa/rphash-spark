@@ -1,17 +1,12 @@
-package edu.uc.rphash.tests;
+package edu.uc.rphash.tests.clusterers;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 import edu.uc.rphash.Clusterer;
 import edu.uc.rphash.Readers.RPHashObject;
 import edu.uc.rphash.Readers.SimpleArrayReader;
-
-import java.lang.reflect.Array;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Random;
-
-import org.apache.spark.api.java.JavaRDD;
 
 /**
  * @author lee
@@ -59,7 +54,6 @@ public class MLE2 implements Clusterer {
 	public float[][] td;
 	public float[][] wt;
 	List<float [] >data;
-	JavaRDD<List<Float>> dataset;
 	
 	public MLE2(List<float[]> counts, int T,float epsilon)
 	{
@@ -300,7 +294,7 @@ public class MLE2 implements Clusterer {
 
 	@Override
 	public RPHashObject getParam() {
-		return new SimpleArrayReader(this.dataset, T);
+		return new SimpleArrayReader(this.data, T);
 	}
 
 }

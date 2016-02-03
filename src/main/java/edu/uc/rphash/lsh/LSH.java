@@ -1,20 +1,17 @@
 package edu.uc.rphash.lsh;
 
-import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
 import edu.uc.rphash.decoders.Decoder;
 import edu.uc.rphash.projections.Projector;
 import edu.uc.rphash.standardhash.HashAlgorithm;
-import edu.uc.rphash.tests.TestUtil;
 
-public class LSH implements Serializable {
+public class LSH {
 	public Projector projectionMatrix;
 	HashAlgorithm standardHashAlgorithm;
-	Decoder lshDecoder;
+	public Decoder lshDecoder;
 	int times;
 	Random rand;
 	float radius;
@@ -23,8 +20,8 @@ public class LSH implements Serializable {
 	List<float[]> noise;
 
 	public LSH(Decoder dec, Projector p, HashAlgorithm hal, List<float[]> noise) {
-		this.projectionMatrix = p;//new Projector[1];
-//		this.projectionMatrices[0] = p;
+		this.projectionMatrix = p;// new Projector[1];
+		// this.projectionMatrices[0] = p;
 		this.standardHashAlgorithm = hal;
 		this.lshDecoder = dec;
 		this.times = 1;
@@ -39,7 +36,8 @@ public class LSH implements Serializable {
 	 */
 	public long lshHash(float[] r) {
 
-		return standardHashAlgorithm.hash(lshDecoder.decode(projectionMatrix.project(r)));
+		return standardHashAlgorithm.hash(lshDecoder.decode(projectionMatrix
+				.project(r)));
 
 	}
 
@@ -102,24 +100,25 @@ public class LSH implements Serializable {
 		float[] pr_r = projectionMatrix.project(r);
 		long[] nonoise = lshDecoder.decode(pr_r);
 		long[] returnHashes = new long[times * nonoise.length];
-		
-//		if(times>1){
-			System.arraycopy(nonoise, 0, returnHashes, 0, nonoise.length);
-			// add some blurring probes in addition to the unnoised decoding
-			float[] noisedProjectedVector = new float[pr_r.length];
-			float[] noiseVec;
-			
-			for (int j = 1; j < times; j++) {
-				System.arraycopy(pr_r, 0, noisedProjectedVector, 0, pr_r.length);
-				noiseVec = noise.get(j - 1);
-				for (int k = 0; k < pr_r.length; k++) {
-					noisedProjectedVector[k] = noisedProjectedVector[k] + noiseVec[k];
-				}
-				nonoise = lshDecoder.decode(noisedProjectedVector);
-				System.arraycopy(nonoise, 0, returnHashes, j * nonoise.length,
-						nonoise.length);
+
+		// if(times>1){
+		System.arraycopy(nonoise, 0, returnHashes, 0, nonoise.length);
+		// add some blurring probes in addition to the unnoised decoding
+		float[] noisedProjectedVector = new float[pr_r.length];
+		float[] noiseVec;
+
+		for (int j = 1; j < times; j++) {
+			System.arraycopy(pr_r, 0, noisedProjectedVector, 0, pr_r.length);
+			noiseVec = noise.get(j - 1);
+			for (int k = 0; k < pr_r.length; k++) {
+				noisedProjectedVector[k] = noisedProjectedVector[k]
+						+ noiseVec[k];
 			}
-//		}
+			nonoise = lshDecoder.decode(noisedProjectedVector);
+			System.arraycopy(nonoise, 0, returnHashes, j * nonoise.length,
+					nonoise.length);
+		}
+		// }
 		return returnHashes;
 	}
 
@@ -140,7 +139,7 @@ public class LSH implements Serializable {
 				mindist = lshDecoder.getDistance();
 			}
 		}
-		return ret;
+		return minret;
 	}
 
 	public long lshMinHashRadius(float[] r, int times) {
@@ -148,21 +147,19 @@ public class LSH implements Serializable {
 		return lshMinHashRadius(r, radius, times);
 	}
 
-	public long[] lshHashRadius(float[] vec, List<float[]> noise) {
+	public long[] lshHashRadius(float[] vec,List<float[]> noise) {
 		long[] ret = new long[noise.size()+1];
-        ret[0] = lshHash(vec);
-        float[] veccopy = new float[vec.length];
-        
-        for(int i = 0; i< noise.size();i++)
-        {
-            System.arraycopy(vec, 0, veccopy, 0, vec.length);
-            for(int j = 0;j<vec.length;j++)veccopy[j]+=noise.get(i)[j];
-            ret[1+i] = lshHash(veccopy);
-        }
-        return ret;
-		
-	}
+		ret[0] = lshHash(vec);
+		float[] veccopy = new float[vec.length];
 
+		for(int i = 0; i< noise.size();i++)
+		{
+			System.arraycopy(vec, 0, veccopy, 0, vec.length);
+			for(int j = 0;j<vec.length;j++)veccopy[j]+=noise.get(i)[j];
+			ret[1+i] = lshHash(veccopy);
+		}
+		return ret;
+	}
 
 	// Query adaptive (c,r)-NN similar to query adaptive lsh ipdps-
 	// TODO finish above

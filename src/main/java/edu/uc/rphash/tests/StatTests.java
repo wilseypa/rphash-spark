@@ -1,19 +1,15 @@
 package edu.uc.rphash.tests;
 
-import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.List;
 import java.util.Random;
 
-import org.apache.spark.api.java.JavaRDD;
-
 import edu.uc.rphash.Readers.StreamObject;
+import edu.uc.rphash.tests.generators.ClusterGenerator;
 import edu.uc.rphash.util.AtomicFloat;
+import edu.uc.rphash.util.VectorUtil;
 
-public class StatTests implements Serializable {
-	int batchDuration;
+public class StatTests {
 	Random r;
 	AtomicFloat sampRatio;
 	public StatTests(float sampRatio) {
@@ -27,7 +23,18 @@ public class StatTests implements Serializable {
 		List<float[]> data = gen.getData();
 		for(int i = 0; i< data.size();i++)
 		{
-			if(TestUtil.findNearestDistance(data.get(i), estCentroids)==gen.getLabels().get(i))count++;
+			if(VectorUtil.findNearestDistance(data.get(i), estCentroids)==gen.getLabels().get(i))count++;
+		}
+		System.out.println(data.size());
+		return (float)count/(float)data.size();
+	}
+	
+	public static float PR(List<float[]> estCentroids, List<Integer> labels,List<float[]> data){
+		int count = 0 ;
+
+		for(int i = 0; i< data.size();i++)
+		{
+			if(VectorUtil.findNearestDistance(data.get(i), estCentroids)==labels.get(i))count++;
 		}
 		System.out.println(data.size());
 		return (float)count/(float)data.size();
@@ -38,18 +45,18 @@ public class StatTests implements Serializable {
 		double count = 0.0 ;
 		for(int i = 0; i< data.size();i++)
 		{
-			count+=TestUtil.distance(data.get(i),estCentroids.get(TestUtil.findNearestDistance(data.get(i), estCentroids))) ;
+			count+=VectorUtil.distance(data.get(i),estCentroids.get(VectorUtil.findNearestDistance(data.get(i), estCentroids))) ;
 		}
 		return count;
 	}
 	
-	public static double WCSSE(List<float[]> estCentroids, String f, int batchDuration, boolean raw) throws IOException{
+	public static double WCSSE(List<float[]> estCentroids, String f,boolean raw) throws IOException{
 		double count = 0.0 ;
-		StreamObject data = new StreamObject(f,0,batchDuration,raw);
+		StreamObject data = new StreamObject(f,0,raw);
 		while(data.hasNext())
 		{
 			float[] next = data.next();
-			count+=TestUtil.distance(next,estCentroids.get(TestUtil.findNearestDistance(next, estCentroids))) ;
+			count+=VectorUtil.distance(next,estCentroids.get(VectorUtil.findNearestDistance(next, estCentroids))) ;
 		}
 		return count;
 	}
@@ -59,7 +66,7 @@ public class StatTests implements Serializable {
 		List<float[]> data = gen.getMedoids();
 		for(int i = 0; i< data.size();i++)
 		{
-			count+=TestUtil.distance(data.get(i),estCentroids.get(TestUtil.findNearestDistance(data.get(i), estCentroids))) ;
+			count+=VectorUtil.distance(data.get(i),estCentroids.get(VectorUtil.findNearestDistance(data.get(i), estCentroids))) ;
 		}
 		return count;
 	}
@@ -82,9 +89,9 @@ public class StatTests implements Serializable {
 	}
 	
 
-	private float[] meanv;
+	private float[] meanv=null;
 	private float[] M2v;
-	private float[] variance;
+	private float[] variance=null;
 	public float[] updateVarianceSampleVec(float[] row){
 		if(n==0){
 			meanv = new float[row.length];
@@ -106,23 +113,28 @@ public class StatTests implements Serializable {
 			M2v[i] = M2v[i] + delta*(x-meanv[i]);
 			variance[i] = M2v[i]/(n-1f);
 		}	
-		
-		
 		return variance;
+	}
+	
+	public float[] scaleVector(float[] vec)
+	{
+		if(meanv==null || variance==null)return vec;
+		for(int i =0;i<vec.length;i++)vec[i] = (vec[i]-meanv[i])/variance[i];
+		return vec;
 	}
 	
 	
 	
-	public static float varianceSample(JavaRDD<List<Float>> dataset,float sampRatio){
+	public static float varianceSample(List<float[]> data,float sampRatio){
 		float n = 0;
 		float mean = 0;
 		float M2 = 0;
 		Random r = new Random();
 		
-		int len = (int) dataset.count();
+		int len = data.size();
 		
 		for(int i = 0 ; i<sampRatio*len; i++){
-			List<Float> row = dataset.takeSample(true, 1).get(0);
+			float[] row = data.get(r.nextInt(len));
 			
 			for(float x : row){
 				n++;

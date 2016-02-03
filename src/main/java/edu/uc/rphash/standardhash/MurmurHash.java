@@ -1,8 +1,6 @@
 package edu.uc.rphash.standardhash;
 
-import java.io.Serializable;
-
-public class MurmurHash implements HashAlgorithm, Serializable {
+public class MurmurHash implements HashAlgorithm {
 	
 	final int seed =  216613626;
 	long tablesize;

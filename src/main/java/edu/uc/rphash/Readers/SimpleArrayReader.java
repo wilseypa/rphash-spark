@@ -1,25 +1,17 @@
 package edu.uc.rphash.Readers;
 
-import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.spark.api.java.JavaRDD;
 
 import edu.uc.rphash.decoders.Decoder;
-import edu.uc.rphash.decoders.E8;
-import edu.uc.rphash.decoders.Leech;
 import edu.uc.rphash.decoders.MultiDecoder;
-import edu.uc.rphash.decoders.PStableDistribution;
-import edu.uc.rphash.decoders.Spherical;
-import edu.uc.rphash.tests.ClusterGenerator;
 import edu.uc.rphash.tests.StatTests;
-import edu.uc.rphash.tests.TestUtil;
+import edu.uc.rphash.tests.generators.ClusterGenerator;
 
-public class SimpleArrayReader implements RPHashObject, Serializable {
+public class SimpleArrayReader implements RPHashObject {
 
 	List<float[]> data;
 	JavaRDD<List<Float>> dataset;
@@ -34,6 +26,7 @@ public class SimpleArrayReader implements RPHashObject, Serializable {
 	float decayrate;
 	List<float[]> centroids;
 	List<Long> topIDs;
+	boolean parallel = true;
 
 	public void setRandomSeed(long randomSeed) {
 		this.randomSeed = randomSeed;
@@ -43,7 +36,7 @@ public class SimpleArrayReader implements RPHashObject, Serializable {
 		this.numBlur = numBlur;
 	}
 
-	public SimpleArrayReader(int k, ClusterGenerator gen) {
+	public SimpleArrayReader(ClusterGenerator gen,int k) {
 		this.dim = gen.getDimension();
 		this.randomSeed = DEFAULT_NUM_RANDOM_SEED;
 		this.hashmod = DEFAULT_HASH_MODULUS;
@@ -160,9 +153,16 @@ public class SimpleArrayReader implements RPHashObject, Serializable {
 		this.decayrate = 0;
 	}
 
-	public Iterator<List<Float>> getVectorIterator() {
+	public Iterator<float[]> getVectorIterator() {
+		List<float[]> dataAsListofFloatArray = new ArrayList<float[]>();
 		List<List<Float>> datasetAsList = dataset.take((int) dataset.count());
-		return datasetAsList.iterator();
+		for (List<Float> vectorAsList : datasetAsList) {
+			float[] vectorAsArray = new float[vectorAsList.size()];
+			for(int i = 0; i < vectorAsList.size(); i++)
+				vectorAsArray[i] = vectorAsList.get(i);
+			dataAsListofFloatArray.add(vectorAsArray);
+		}
+		return dataAsListofFloatArray.iterator();
 	}
 
 	@Override
@@ -263,8 +263,8 @@ public class SimpleArrayReader implements RPHashObject, Serializable {
 	}
 
 	@Override
-	public void setVariance(JavaRDD<List<Float>> dataset) {
-		dec.setVariance(StatTests.varianceSample(dataset, .01f));
+	public void setVariance(List<float[]> data) {
+		dec.setVariance(StatTests.varianceSample(data, .01f));
 	}
 
 	@Override
@@ -280,6 +280,17 @@ public class SimpleArrayReader implements RPHashObject, Serializable {
 	@Override
 	public float getDecayRate() {
 		return this.decayrate;
+	}
+
+	@Override
+	public void setParallel(boolean parseBoolean) {
+		this.parallel = parseBoolean;
+		
+	}
+
+	@Override
+	public boolean getParallel() {
+		return parallel;
 	}
 	
 

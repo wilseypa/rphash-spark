@@ -1,20 +1,18 @@
-package edu.uc.rphash.tests;
+package edu.uc.rphash.tests.clusterers;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-
-import org.apache.spark.api.java.JavaRDD;
 
 import edu.uc.rphash.Clusterer;
 import edu.uc.rphash.Readers.RPHashObject;
 import edu.uc.rphash.Readers.SimpleArrayReader;
 import edu.uc.rphash.projections.DBFriendlyProjection;
-import edu.uc.rphash.projections.GaussianProjection;
 import edu.uc.rphash.projections.Projector;
+import edu.uc.rphash.tests.generators.GenerateData;
+import edu.uc.rphash.util.VectorUtil;
 
-public class Kmeans  implements Clusterer, Serializable{
+public class Kmeans  implements Clusterer{
 
 	
 	
@@ -22,7 +20,6 @@ public class Kmeans  implements Clusterer, Serializable{
 	int k;
 	int n;
 	List<float[]> data;
-	JavaRDD<List<Float>> dataset;
 	int projdim;
 	
 	List<float[]> means; 
@@ -100,7 +97,7 @@ public class Kmeans  implements Clusterer, Serializable{
 		for(int clusterid = 0 ; clusterid< k;clusterid++)
 		{
 			for(Integer member: clusters.get(clusterid)){
-				int nearest = TestUtil.findNearestDistance(data.get(member), means);
+				int nearest = VectorUtil.findNearestDistance(data.get(member), means);
 				newClusters.get(nearest).add(member);
 				if(nearest!=clusterid)swaps++;
 			}		
@@ -164,7 +161,7 @@ public class Kmeans  implements Clusterer, Serializable{
 	public static void main(String[] args){
 		GenerateData gen = new GenerateData(8,100,100);
 		Kmeans kk = new Kmeans(5,gen.data(),24);
-		TestUtil.prettyPrint(kk.getCentroids());
+		VectorUtil.prettyPrint(kk.getCentroids());
 	}
 
 
@@ -173,7 +170,7 @@ public class Kmeans  implements Clusterer, Serializable{
 	@Override
 	public RPHashObject getParam() {
 
-		return new SimpleArrayReader(dataset, k);
+		return new SimpleArrayReader(data, k);
 	}
 
 

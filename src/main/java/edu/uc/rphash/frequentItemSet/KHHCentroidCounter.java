@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
-import java.io.*;
 
 import edu.uc.rphash.Centroid;
 
@@ -18,7 +17,7 @@ import edu.uc.rphash.Centroid;
 /*
  * @author lee
  */
-public class KHHCentroidCounter implements Serializable {
+public class KHHCentroidCounter {
 	public static final long PRIME_MODULUS = (1L << 31) - 1;
 	private int depth;
 	private int width;
@@ -34,8 +33,7 @@ public class KHHCentroidCounter implements Serializable {
 	ConcurrentHashMap<Long, Centroid> frequentItems;
 	ConcurrentHashMap<Long, Float> countlist;
 	Float decayRate;
-	
-	/*
+
 	Comparator<Centroid> cmp = new Comparator<Centroid>() {
 		@Override
 		public int compare(Centroid n1, Centroid n2) {
@@ -50,10 +48,7 @@ public class KHHCentroidCounter implements Serializable {
 				return 0;
 			}
 	};
-	*/
-	ModifiedComparator<Centroid> cmp = new ModifiedComparator<Centroid>();
 	
-
 	public KHHCentroidCounter(int k) {
 		this.origk = k;
 		this.k = (int) (k * Math.log(k));
@@ -103,7 +98,7 @@ public class KHHCentroidCounter implements Serializable {
 
 	public void add(Centroid c) {
 		this.count++;
-		float count = addLong(c.id, 1);
+		float count = count(c.id);
 
 		synchronized (frequentItems) {
 			Centroid probed = frequentItems.remove(c.id);
@@ -162,7 +157,7 @@ public class KHHCentroidCounter implements Serializable {
 	 * @param count
 	 * @return size of min count bucket
 	 */
-	private float addLong(long item, long count) {
+	public float addLong(long item, long count) {
 
 		float min;
 		if (decayRate != null) {
@@ -217,13 +212,16 @@ public class KHHCentroidCounter implements Serializable {
 		}
 		return min;
 	}
-
+	
 	List<Centroid> topcent = null;
 	List<Float> counts = null;
 
 	public List<Centroid> getTop() {
+		if(topcent!=null)return topcent;
 		this.topcent = new ArrayList<>();
 		this.counts = new ArrayList<>();
+		
+		
 		synchronized (priorityQueue) {
 			while (!priorityQueue.isEmpty()) {
 				Centroid tmp = priorityQueue.poll();
@@ -235,8 +233,8 @@ public class KHHCentroidCounter implements Serializable {
 	}
 
 	public List<Float> getCounts() {
-		if (this.counts != null)
-			return counts;
+//		if (this.counts != null)
+//			return counts;
 		getTop();
 		return counts;
 	}

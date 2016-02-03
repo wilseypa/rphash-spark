@@ -1,8 +1,9 @@
 package edu.uc.rphash.decoders;
 
-import java.io.Serializable;
 
-public class MultiDecoder implements Decoder, Serializable {
+
+
+public class MultiDecoder implements Decoder {
 	
 	Decoder innerDec;
 	int dimension;
@@ -63,6 +64,10 @@ public class MultiDecoder implements Decoder, Serializable {
 	@Override
 	public void setVariance(Float parameterObject) {
 		innerDec.setVariance(parameterObject);
+	}
+	@Override
+	public boolean selfScaling() {
+		return innerDec.selfScaling();
 	}
 
 }

@@ -3,18 +3,13 @@ package edu.uc.rphash.Readers;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.spark.api.java.JavaRDD;
-
 import edu.uc.rphash.decoders.Decoder;
-import edu.uc.rphash.decoders.Leech;
-import edu.uc.rphash.decoders.LeechMulti;
-import edu.uc.rphash.decoders.MultiDecoder;
 import edu.uc.rphash.decoders.Spherical;
 
 public interface RPHashObject {
 	 final static int DEFAULT_NUM_PROJECTIONS = 2;
 	 public final static int DEFAULT_NUM_BLUR = 1;
-	 final static int DEFAULT_NUM_RANDOM_SEED = 0;
+	 final static long DEFAULT_NUM_RANDOM_SEED = 38006359550206753L;
 	 final static int DEFAULT_NUM_DECODER_MULTIPLIER = 1;
 	 final static long DEFAULT_HASH_MODULUS = Long.MAX_VALUE;
 	 final static Decoder DEFAULT_INNER_DECODER =  new Spherical(64,4,1);
@@ -25,7 +20,7 @@ public interface RPHashObject {
 	long getHashmod();
 	int getNumBlur();
 	
-	Iterator<List<Float>> getVectorIterator();
+	Iterator<float[]> getVectorIterator();
 	List<float[]> getCentroids( );
 	
 	List<Long> getPreviousTopID();
@@ -45,9 +40,11 @@ public interface RPHashObject {
 	void setDecoderType(Decoder dec);
 	Decoder getDecoderType();
 	String toString();
-	void setVariance(JavaRDD<List<Float>> dataset);
+	void setVariance(List<float[]> data);
 	void setDecayRate(float parseFloat);
 	float getDecayRate();
+	void setParallel(boolean parseBoolean);
+	boolean getParallel();
 
 
 }

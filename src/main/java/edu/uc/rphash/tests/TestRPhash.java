@@ -3,9 +3,10 @@ package edu.uc.rphash.tests;
 
 import java.util.List;
 
-import org.apache.spark.api.java.JavaRDD;
-
 import edu.uc.rphash.RPHashSimple;
+import edu.uc.rphash.tests.clusterers.Kmeans;
+import edu.uc.rphash.tests.generators.GenerateData;
+import edu.uc.rphash.util.VectorUtil;
 
 
 //import edu.uc.rphash.frequentItemSet.KarpFrequentItemSet;
@@ -17,7 +18,6 @@ public class TestRPhash {
 	static void testRPHash(int k, int n,int d,float variance,int projdim){
 		
 		GenerateData gen = new GenerateData(k,n/k,d,variance,true,1.f);
-		JavaRDD<List<Float>> dataset = null;
 		
 		System.out.print(k+":"+n+":"+d+":"+variance+":"+projdim+"\t");
 		System.out.print(StatTests.PR(gen.medoids(),gen)+":\t");
@@ -27,21 +27,21 @@ public class TestRPhash {
 		List<float[]> M = ( new Kmeans(k,gen.data(),projdim)).getCentroids();
 		long duration = (System.nanoTime() - startTime);
 
-		List<float[]> aligned = TestUtil.alignCentroids(M,gen.medoids());
+		List<float[]> aligned = VectorUtil.alignCentroids(M,gen.medoids());
 		System.out.print(StatTests.PR(aligned,gen)+":"+duration/1000000000f);
 		System.out.print("\t");
 		System.gc();
 
 
 		
-		RPHashSimple rph = new RPHashSimple(dataset,k);
+		RPHashSimple rph = new RPHashSimple(gen.data(),k);
 		
 		
 		startTime = System.nanoTime();
 		List<float[]> centroids = rph.getCentroids();
 		duration = (System.nanoTime() - startTime);
 		
-		aligned  = TestUtil.alignCentroids(centroids,gen.medoids());
+		aligned  = VectorUtil.alignCentroids(centroids,gen.medoids());
 		System.out.print(StatTests.PR(aligned,gen)+":"+duration/1000000000f);
 		System.out.print("\t");
 		System.gc();

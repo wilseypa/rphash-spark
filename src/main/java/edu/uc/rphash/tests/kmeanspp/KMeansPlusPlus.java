@@ -24,14 +24,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-import org.apache.spark.api.java.JavaRDD;
-
 import edu.uc.rphash.Clusterer;
 import edu.uc.rphash.Readers.RPHashObject;
 import edu.uc.rphash.Readers.SimpleArrayReader;
-import edu.uc.rphash.tests.GenerateData;
 import edu.uc.rphash.tests.StatTests;
-import edu.uc.rphash.tests.TestUtil;
+import edu.uc.rphash.tests.generators.GenerateData;
+import edu.uc.rphash.util.VectorUtil;
 
 
 /**
@@ -543,9 +541,9 @@ public class KMeansPlusPlus<T extends Clusterable<T>> implements Clusterer {
 //       this.emptyStrategy = emptyStrategy;
 //   }
 	  final private List<float[]> data;
-	  JavaRDD<List<Float>> dataset;
 	  
-    public KMeansPlusPlus(List<float[]> data,int k) {
+    @SuppressWarnings("unchecked")
+	public KMeansPlusPlus(List<float[]> data,int k) {
     	random  =new Random();
     	emptyStrategy= EmptyClusterStrategy.LARGEST_POINTS_NUMBER;
 		this.k = k;
@@ -596,14 +594,14 @@ public class KMeansPlusPlus<T extends Clusterable<T>> implements Clusterer {
 	@Override
 	public RPHashObject getParam() {
 		
-		return new SimpleArrayReader(dataset, k);
+		return new SimpleArrayReader(data, k);
 	}
 	public static void main(String[] args){
 		GenerateData gen = new GenerateData(3,5000,2,.1f);
 		KMeansPlusPlus<DoublePoint> kk = new KMeansPlusPlus<>(gen.data(),3);
 
 		
-		List<float[]> aligned = TestUtil.alignCentroids(
+		List<float[]> aligned = VectorUtil.alignCentroids(
 				kk.getCentroids(), gen.medoids());
 		
 		System.out.println( StatTests.PR(aligned, gen) + ":"+StatTests.WCSSE(aligned, gen.getData()));
