@@ -88,7 +88,7 @@ public class RPHashSimple implements Clusterer {
 		HashMap<Long,Integer> countid = new HashMap<Long,Integer>(counts.size());
 		int i = 0;
 		for (long id : so.getPreviousTopID()){
-			centroids.add(new Centroid(so.getdim(), id));
+			centroids.add(new Centroid(so.getdim(), id,-1));
 			counts.add(0f);
 			countid.put(id, i++);
 		}
@@ -128,6 +128,12 @@ public class RPHashSimple implements Clusterer {
 
 	}
 
+	public RPHashSimple(List<float[]> dataset, int k) {
+//		variance = StatTests.varianceSample(data, .01f);
+
+		so = new SimpleArrayReader(dataset, k,0);
+
+	}
 	public RPHashSimple(RPHashObject so) {
 		this.so = so;
 	}

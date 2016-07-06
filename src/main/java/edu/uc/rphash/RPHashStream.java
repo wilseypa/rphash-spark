@@ -48,7 +48,7 @@ public class RPHashStream implements StreamClusterer {
 			return is.count;
 		}
 
-		Centroid c = new Centroid(vec);
+		Centroid c = new Centroid(vec,-1);
 		for (LSH lshfunc : lshfuncs) {
 			if (so.getNumBlur() != 1) {
 				long[] hash = lshfunc
@@ -105,7 +105,7 @@ public class RPHashStream implements StreamClusterer {
 	}
 
 	public RPHashStream(List<float[]> data, int k) {
-		so = new SimpleArrayReader(data, k);
+		so = new SimpleArrayReader(data, k,so.DEFAULT_NUM_BLUR);
 		if (so.getParallel())
 			this.processors = Runtime.getRuntime().availableProcessors();
 		else
@@ -115,7 +115,7 @@ public class RPHashStream implements StreamClusterer {
 	}
 	
 	public RPHashStream(List<float[]> data, int k, boolean parallel) {
-		so = new SimpleArrayReader(data, k);
+		so = new SimpleArrayReader(data, k,so.DEFAULT_NUM_BLUR);
 		so.setParallel(parallel);
 		if (so.getParallel())
 			this.processors = Runtime.getRuntime().availableProcessors();

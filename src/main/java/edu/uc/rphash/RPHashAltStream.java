@@ -33,7 +33,7 @@ public class RPHashAltStream implements Clusterer, Runnable {
 
 		while (vecs.hasNext()) {
 			float[] vec = vecs.next();
-			Centroid c = new Centroid(vec);
+			Centroid c = new Centroid(vec,-1);
 			is.add(c);
 
 		}
@@ -46,12 +46,12 @@ public class RPHashAltStream implements Clusterer, Runnable {
 
 	public RPHashAltStream(List<float[]> data, int k) {
 		variance = StatTests.varianceSample(data, .01f);
-		so = new SimpleArrayReader(data, k);
+		so = new SimpleArrayReader(data, k,so.DEFAULT_NUM_BLUR);
 	}
 
 	public RPHashAltStream(List<float[]> data, int k, int times, int rseed) {
 		variance = StatTests.varianceSample(data, .01f);
-		so = new SimpleArrayReader(data, k);
+		so = new SimpleArrayReader(data, k,so.DEFAULT_NUM_BLUR);
 	}
 
 	public RPHashAltStream(RPHashObject so) {

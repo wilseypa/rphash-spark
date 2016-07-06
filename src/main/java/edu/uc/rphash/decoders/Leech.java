@@ -1,7 +1,17 @@
 package edu.uc.rphash.decoders;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
+import edu.uc.rphash.Centroid;
+import edu.uc.rphash.Readers.RPHashObject;
+import edu.uc.rphash.frequentItemSet.KHHCentroidCounter;
+import edu.uc.rphash.lsh.LSH;
+import edu.uc.rphash.standardhash.MurmurHash;
 import edu.uc.rphash.util.VectorUtil;
 
 /*Author: Lee Carraher
@@ -164,14 +174,42 @@ public class Leech implements Decoder {
 
 	public Leech() {
 		this.scaler = 1.0f;
-		float[][] evenAPts = { { APT, DPT }, { CPT, DPT }, { CPT, BPT },
-				{ APT, BPT } };
-		float[][] oddAPts = { { BPT, CPT }, { BPT, APT }, { DPT, APT },
-				{ DPT, CPT } };
-		float[][] evenBPts = { { BPT, DPT }, { DPT, DPT }, { DPT, BPT },
-				{ BPT, BPT } };
-		float[][] oddBPts = { { CPT, CPT }, { CPT, APT }, { APT, APT },
-				{ APT, CPT } };
+
+		float p3 = 1f/3f;
+		float p6 = 2f/3f;
+		
+		
+		float[][] evenAPts = {{-1,0},{p3,0},{-p3,p6},{-p3,-p6}};
+		float[][] oddAPts  = {{-p3,0},{1,0},{p3,-p6},{p3,p6}};
+		float[][] evenBPts = {{-p6,p3},{-p6,p3},{0,1},{0,-p3}};
+		float[][] oddBPts  = {{0,p3},{0,-1},{p6,-p3},{-p6,-p3}};
+		
+		for(float[] f :evenAPts )
+			System.out.print(f[0]+",");
+		for(float[] f :oddAPts )
+			System.out.print(f[0]+",");
+		for(float[] f :evenBPts )
+			System.out.print(f[0]+",");
+		for(float[] f :oddBPts )
+			System.out.print(f[0]+",");
+		System.out.println();
+		for(float[] f :evenAPts )
+			System.out.print(f[1]+",");
+		for(float[] f :oddAPts )
+			System.out.print(f[1]+",");
+		for(float[] f :evenBPts )
+			System.out.print(f[1]+",");
+		for(float[] f :oddBPts )
+			System.out.print(f[1]+",");
+		System.out.println();
+//		float[][] evenAPts = { { APT, DPT }, { CPT, DPT }, { CPT, BPT },
+//				{ APT, BPT } };
+//		float[][] oddAPts = { { BPT, CPT }, { BPT, APT }, { DPT, APT },
+//				{ DPT, CPT } };
+//		float[][] evenBPts = { { BPT, DPT }, { DPT, DPT }, { DPT, BPT },
+//				{ BPT, BPT } };
+//		float[][] oddBPts = { { CPT, CPT }, { CPT, APT }, { APT, APT },
+//				{ APT, CPT } };
 		this.evenAPts = evenAPts;
 		this.oddAPts = oddAPts;
 		this.evenBPts = evenBPts;
@@ -214,6 +252,7 @@ public class Leech implements Decoder {
 	public float scaler;
 
 	public Leech(float scaler) {
+		
 		this.setVariance(scaler);
 	}
 
@@ -315,7 +354,6 @@ public class Leech implements Decoder {
 			// r[i*2+1]= r[i*2+1]+2f ;
 			// ret+=1;
 			// }
-
 			float dist000 = distance(r, evenPts[0], i * 2);
 			float dist110 = distance(r, evenPts[1], i * 2);
 			float dist001 = distance(r, evenPts[2], i * 2);
@@ -777,17 +815,36 @@ public class Leech implements Decoder {
 		for (int i = 0; i < 24; i++) {
 			retOpt[0] += cw[i];
 			retOpt[0] <<= 1;
+		}
+		
 
-		}
-		for (int i = 0; i < 12; i++) {
-			retOpt[0] += cp[i];
-			retOpt[0] <<= 1;
-		}
-		if (quant != null)// use remaining 64-36 = 8 bits for a quantization
-							// vector
-			for (int i = 0; i < 8; i++) {
-				retOpt[0] ^= quant[i];
-			}
+
+//		for (int i = 0; i < 12; i++) {
+//			retOpt[0] += cp[i];
+//			retOpt[0] <<= 1;
+//		}
+		
+//		int val = 0;
+//		if(parity%2==1){
+//			val = 1;
+//		}
+//		
+//		for (int i = 0; i < 12; i++) {
+//			retOpt[0] += val;
+//			retOpt[0] <<= 1;
+//		}
+		//should use 48 bits of data
+		
+//		for (int i = 0; i < 8; i++) {
+//		retOpt[1] += quant[i];
+//		retOpt[1]<<=8;
+//	}
+		
+//		if (quant != null)// use remaining 64-36 = 8 bits for a quantization
+//							// vector
+//			for (int i = 0; i < 8; i++) {
+//				retOpt[0] ^= quant[i];
+//			}
 
 		// retOpt[0] = (byte) (cw[0] + (cw[1] << 1) + (cw[2] << 2) + (cw[3] <<
 		// 3)
@@ -868,9 +925,10 @@ public class Leech implements Decoder {
 		float[][] dijks = new float[12][4];
 		// there is a set for each quarter decoder, and the A/B_ij odd/even
 		char[][] kparities = new char[12][4];
-
-		byte[] append = generateQuantizationVector(r);
-		QAM(r, evenAPts, oddAPts, dijs, dijks, kparities);
+		float[] rr = new float[24];
+		System.arraycopy(r, 0, rr, 0, 24);
+		byte[] append = generateQuantizationVector(rr);
+		QAM(rr, evenAPts, oddAPts, dijs, dijks, kparities);
 
 		// #####################Block Confidences ###################
 		// 0 1 w W
@@ -925,7 +983,7 @@ public class Leech implements Decoder {
 
 		// ----------------H_24 Half Lattice Decoder for B
 		// points----------------
-		QAM(r, evenBPts, oddBPts, dijs, dijks, kparities);
+		QAM(rr, evenBPts, oddBPts, dijs, dijks, kparities);
 		blockConf(dijs, muEs, muOs, prefRepE, prefRepO);
 
 		// ----------------B Even Quarter Lattice Decoder----------------
@@ -970,29 +1028,109 @@ public class Leech implements Decoder {
 		return this.distance;
 	}
 
+	
+
+	
+	
+	
+	
+	
+	
+	
 	public static void main(String[] args) {
 		Random r = new Random();
-		int d = 24;
-		Leech sp = new Leech();
-		for (int i = 0; i < 100; i++) {
+		int d =  24;
+
+		Leech sp = new Leech(1f);
+		// MultiDecoder sp = new MultiDecoder( d, e8);
+		MurmurHash hash = new MurmurHash(Integer.MAX_VALUE);
+		float testResolution = 10000f;
+
+		HashMap<Long, Integer> ctmap = new HashMap<Long, Integer>();
+
+		for (int i = 0; i < 400; i++) {
 			int ct = 0;
 			float distavg = 0.0f;
-			for (int j = 0; j < 10000; j++) {
+			for (int j = 0; j < testResolution; j++) {
 				float p1[] = new float[d];
 				float p2[] = new float[d];
+
+				// generate a vector
 				for (int k = 0; k < d; k++) {
-					p1[k] = r.nextFloat() * 2 - 1;
+					p1[k] = r.nextFloat() * 2 - 1f;
 					p2[k] = (float) (p1[k] + r.nextGaussian()
-							* ((float) i / 100f));
+							* ((float) i / 1000f));
 				}
-				distavg += VectorUtil.distance(p1, p2);
-				long[] hp1 = sp.decode(p1);
-				long[] hp2 = sp.decode(p2);
-				if (hp1[0] == hp2[0])
-					ct++;
+				float dist = VectorUtil.distance(p1, p2);
+				distavg += dist;
+				long[] l1 = sp.decode(p1);
+				long[] l2 = sp.decode(p2);
+
+				ctmap.put(l1[0],
+						ctmap.containsKey(l1[0]) ? 1 + ctmap.get(l1[0]) : 1);
+
+				long hp1 = hash.hash(l1);
+				long hp2 = hash.hash(l2);
+
+				// ctmap.put(hp1,ctmap.containsKey(hp1)?1+ctmap.get(hp1):1);
+
+				ct += (hp2 == hp1) ? 1 : 0;
+
 			}
-			System.out.println(distavg / 10000f + "\t" + (float) ct / 10000f);
+
+			System.out.println(distavg / testResolution + "\t" + (float) ct
+			/ testResolution);
 		}
+		
+		
+		
+		
+//		new Leech();
+//		class ConcurrentGen implements Runnable {
+//			
+//			Random r;
+//			Map<Long,Integer> ctmap;
+//			Decoder sp;
+//			public ConcurrentGen(Random r,Map<Long,Integer> ctmap, Decoder sp){
+//				this.ctmap = ctmap;
+//				this.r = r;
+//				this.sp = sp;
+//			}
+//			
+//			@Override
+//			public void run() {
+//				int d = 24;
+//				float p1[] = new float[d];
+//				long[] l1 = new long[1] ;
+//				int prevsize = 0;
+//				for (long i = 0; i < 100_000_000; i++) {
+//					for (long j = 0; j < 1_000_000; j++) {
+//						// generate a vector
+//						for (int k = 0; k < d; k++) {
+//							p1[k] = r.nextFloat() * 2 - 1f;
+//						}
+//						l1 = sp.decode(p1);
+//						ctmap.put(l1[0],
+//								ctmap.containsKey(l1[0]) ? 1 + ctmap.get(l1[0]) : 1);
+//					}
+//					if(prevsize==ctmap.size())return;
+//					System.out.println(ctmap.size());
+//					
+//				}
+//			}
+//		}
+//
+//		
+//		Random r = new Random();
+//		Leech sp = new Leech(1f);
+//		// MultiDecoder sp = new MultiDecoder( d, e8);
+//		int processors =  Runtime.getRuntime().availableProcessors();
+//		Executor executor = Executors.newFixedThreadPool(processors);
+//		ConcurrentHashMap<Long, Integer> ctmap = new ConcurrentHashMap<Long, Integer>(16_800_000);
+//		for(int i = 0; i < processors; i++){
+//			executor.execute(new ConcurrentGen(new Random(r.nextInt()/211),ctmap,sp));
+//		}
+		
 	}
 
 	// public static void main(String[] args)
@@ -1046,6 +1184,7 @@ public class Leech implements Decoder {
 
 	@Override
 	public void setVariance(Float parameterObject) {
+		if(parameterObject == 0)parameterObject = 1f;
 		if (scaler != parameterObject.floatValue()) {
 			scaler = parameterObject;
 			radius = (DPT + CPT) * scaler;

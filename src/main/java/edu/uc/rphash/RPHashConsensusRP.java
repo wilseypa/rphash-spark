@@ -21,7 +21,7 @@ public class RPHashConsensusRP  implements Clusterer{
 
 		this.k =k;
 		this.d = data.get(0).length;
-		this.so = new SimpleArrayReader(data,k);
+		this.so = new SimpleArrayReader(data,k,so.DEFAULT_NUM_BLUR);
 	}
 	
 	public RPHashConsensusRP(RPHashObject o) {

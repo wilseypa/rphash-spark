@@ -31,7 +31,7 @@ public class VectorLevelConcurrency implements Runnable {
 //			vec = this.vartracker.scaleVector(vec);
 //		}
 
-		Centroid c = new Centroid(vec);
+		Centroid c = new Centroid(vec,-1);
 		for (LSH lshfunc : lshfuncs) {
 			if (so.getNumBlur() != 1) {
 				long[] hash = lshfunc
@@ -40,7 +40,7 @@ public class VectorLevelConcurrency implements Runnable {
 					c.addID(h);
 					is.addLong(h, 1);
 				}
-				System.out.println("hello");
+//				System.out.println("hello");
 			} else {
 				long hash = lshfunc.lshHash(vec);
 				c.addID(hash);

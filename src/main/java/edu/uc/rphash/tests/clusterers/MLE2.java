@@ -294,7 +294,7 @@ public class MLE2 implements Clusterer {
 
 	@Override
 	public RPHashObject getParam() {
-		return new SimpleArrayReader(this.data, T);
+		return new SimpleArrayReader(this.data, T,RPHashObject.DEFAULT_NUM_BLUR);
 	}
 
 }

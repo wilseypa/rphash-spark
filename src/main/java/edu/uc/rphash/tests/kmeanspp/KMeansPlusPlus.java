@@ -594,7 +594,7 @@ public class KMeansPlusPlus<T extends Clusterable<T>> implements Clusterer {
 	@Override
 	public RPHashObject getParam() {
 		
-		return new SimpleArrayReader(data, k);
+		return new SimpleArrayReader(data, k,RPHashObject.DEFAULT_NUM_BLUR);
 	}
 	public static void main(String[] args){
 		GenerateData gen = new GenerateData(3,5000,2,.1f);

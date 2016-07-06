@@ -1,5 +1,6 @@
 package edu.uc.rphash;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -7,6 +8,7 @@ import java.util.Random;
 
 import edu.uc.rphash.Readers.RPHashObject;
 import edu.uc.rphash.Readers.SimpleArrayReader;
+import edu.uc.rphash.Readers.StreamObject;
 import edu.uc.rphash.decoders.Decoder;
 import edu.uc.rphash.decoders.Leech;
 import edu.uc.rphash.frequentItemSet.ItemSet;
@@ -37,10 +39,20 @@ public class RPHashMultiProj implements Clusterer {
 	float variance;
 
 	public RPHashObject map() {
-		Iterator<float[]> vecs = so.getVectorIterator();
-		if (!vecs.hasNext())
-			return so;
+		
+//		Iterator<float[]> vecs = so.getVectorIterator();
+//		if (!vecs.hasNext())
+//			return so;
 
+		Iterator<float[]> vecs;
+		try {
+			vecs = new StreamObject("/var/rphash/data/data.mat", 0, false).getVectorIterator();
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.err.println("file not accessible or not found on cluster node!");
+			return so;
+		}
+		
 		long hash;
 		int probes = so.getNumProjections();
 		int k = (int) (so.getk() * probes);
@@ -84,9 +96,17 @@ public class RPHashMultiProj implements Clusterer {
 	 */
 	public RPHashObject reduce() {
 
-		Iterator<float[]> vecs = so.getVectorIterator();
-		if (!vecs.hasNext())
+//		Iterator<float[]> vecs = so.getVectorIterator();
+//		if (!vecs.hasNext())
+//			return so;
+		Iterator<float[]> vecs;
+		try {
+			vecs = new StreamObject("/var/rphash/data/data.mat", 0, false).getVectorIterator();
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.err.println("file not accessible or not found on cluster node!");
 			return so;
+		}
 
 		int blurValue = so.getNumBlur();
 		int probes = so.getNumProjections();
@@ -95,7 +115,7 @@ public class RPHashMultiProj implements Clusterer {
 		// make a set of k default centroid objects
 		ArrayList<Centroid> centroids = new ArrayList<Centroid>();
 		for (long id : so.getPreviousTopID())
-			centroids.add(new Centroid(so.getdim(), id));
+			centroids.add(new Centroid(so.getdim(), id,-1));
 
 		// create same LSH Device as before
 		Random r = new Random(so.getRandomSeed());
@@ -142,7 +162,7 @@ public class RPHashMultiProj implements Clusterer {
 
 	public RPHashMultiProj(List<float[]> data, int k) {
 		variance = StatTests.varianceSample(data, .01f);
-		so = new SimpleArrayReader(data, k);
+		so = new SimpleArrayReader(data, k,RPHashObject.DEFAULT_NUM_BLUR);
 		so.getDecoderType().setVariance(variance);
 	}
 
