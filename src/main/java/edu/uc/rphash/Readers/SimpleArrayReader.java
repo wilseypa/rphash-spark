@@ -293,7 +293,17 @@ public class SimpleArrayReader implements RPHashObject {
 		return parallel;
 	}
 	
+	List<Float> counts;
+	@Override
+	public void setCounts(List<Float> counts) {
 
+		this.counts = counts;
+	}
+
+	@Override
+	public List<Float> getCounts() {
+		return counts;
+	}
 
 
 

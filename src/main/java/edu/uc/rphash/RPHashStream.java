@@ -40,31 +40,37 @@ public class RPHashStream implements StreamClusterer {
 
 	@Override
 	public synchronized long addVectorOnlineStep(final float[] vec) {
-
 		if (so.getParallel()) {
 			VectorLevelConcurrency r = new VectorLevelConcurrency(vec,
-					lshfuncs, vartracker, is,so);
+					lshfuncs,  is,so);
 			executor.execute(r);
 			return is.count;
 		}
-
-		Centroid c = new Centroid(vec,-1);
-		for (LSH lshfunc : lshfuncs) {
-			if (so.getNumBlur() != 1) {
-				long[] hash = lshfunc
-						.lshHashRadiusNo2Hash(vec, so.getNumBlur());
-				for (long h : hash) {
-					c.addID(h);
-					is.addLong(h, 1);
-				}
-			} else {
-				long hash = lshfunc.lshHash(vec);
-				c.addID(hash);
-				is.addLong(hash, 1);
-			}
-		}
-		is.add(c);
-		return is.count;
+		return VectorLevelConcurrency.computeSequential(vec, lshfuncs, is, so);
+//		if (so.getParallel()) {
+//			VectorLevelConcurrency r = new VectorLevelConcurrency(vec,
+//					lshfuncs, vartracker, is,so);
+//			executor.execute(r);
+//			return is.count;
+//		}
+//
+//		Centroid c = new Centroid(vec);
+//		for (LSH lshfunc : lshfuncs) {
+//			if (so.getNumBlur() != 1) {
+//				long[] hash = lshfunc
+//						.lshHashRadiusNo2Hash(vec, so.getNumBlur());
+//				for (long h : hash) {
+//					c.addID(h);
+//					is.addLong(h, 1);
+//				}
+//			} else {
+//				long hash = lshfunc.lshHash(vec);
+//				c.addID(hash);
+//				is.addLong(hash, 1);
+//			}
+//		}
+//		is.add(c);
+//		return is.count;
 	}
 
 	public void init() {
@@ -185,8 +191,7 @@ public class RPHashStream implements StreamClusterer {
 		while (vecs.hasNext()) {
 			if (so.getParallel()) {
 				float[] vec = vecs.next();
-				executor.execute(new VectorLevelConcurrency(vec, lshfuncs,
-						vartracker, is,so));
+				executor.execute(new VectorLevelConcurrency(vec, lshfuncs,is,so));
 			} else {
 				addVectorOnlineStep(vecs.next());
 			}

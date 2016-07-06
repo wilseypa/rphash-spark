@@ -306,4 +306,16 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 	public boolean getParallel() {
 		return parallel;
 	}
+	
+	List<Float> counts;
+	@Override
+	public void setCounts(List<Float> counts) {
+
+		this.counts = counts;
+	}
+
+	@Override
+	public List<Float> getCounts() {
+		return counts;
+	}
 }
