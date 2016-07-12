@@ -231,5 +231,20 @@ public class StatTests {
 		
 		return  M2/(n-1f);
 	}
+	
+	public static float variance(float[] row) {
+		float n = 0;
+		float mean = 0;
+		float M2 = 0;
+		for(float x : row){
+			n++;
+			float delta = x - mean;
+			mean = mean + delta/n;
+			M2 = M2 + delta*(x-mean);
+		}
+		if(n<2)return 0;
+		
+		return  M2/(n-1f);
+	}
 
 }

@@ -2,17 +2,22 @@ package edu.uc.rphash;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Stream;
 
 import edu.uc.rphash.Readers.RPHashObject;
 import edu.uc.rphash.Readers.SimpleArrayReader;
 import edu.uc.rphash.Readers.StreamObject;
 import edu.uc.rphash.decoders.Decoder;
-import edu.uc.rphash.decoders.Leech;
 import edu.uc.rphash.frequentItemSet.ItemSet;
-import edu.uc.rphash.frequentItemSet.KHHCountMinSketch;
 import edu.uc.rphash.frequentItemSet.SimpleFrequentItemSet;
 import edu.uc.rphash.lsh.LSH;
 import edu.uc.rphash.projections.DBFriendlyProjection;
@@ -39,25 +44,36 @@ import edu.uc.rphash.util.VectorUtil;
 public class RPHashMultiProj implements Clusterer {
 	float variance;
 
-	public RPHashObject map() {
-		
-//		Iterator<float[]> vecs = so.getVectorIterator();
-//		if (!vecs.hasNext())
-//			return so;
+	/**
+	 * @return
+	 */
+	public static List<Long>[] mapphase1(int k) {
 
+		// Iterator<float[]> vecs = so.getVectorIterator();
+		// if (!vecs.hasNext())
+		// return so;
+
+		SimpleArrayReader so = new SimpleArrayReader(null, k,
+				RPHashObject.DEFAULT_NUM_BLUR);
 		Iterator<float[]> vecs;
 		try {
-			vecs = new StreamObject("/var/rphash/data/data.mat", 0, false).getVectorIterator();
+			vecs = new StreamObject("/var/rphash/data/data.mat", 0, false)
+					.getVectorIterator();
 		} catch (IOException e) {
 			e.printStackTrace();
-			System.err.println("file not accessible or not found on cluster node!");
-			return so;
+			System.err
+					.println("file not accessible or not found on cluster node!");
+			return null;
 		}
-		
+
+		float[] vec = vecs.next();
+		so.setdim(vec.length);
+		so.getDecoderType().setVariance(StatTests.variance(vec));
+
 		long[] hash;
 		int projections = so.getNumProjections();
 
-		int k = (int) (so.getk() * projections) * 5;
+		// int k = (int) (so.getk() * projections) * 5;
 
 		// initialize our counter
 		ItemSet<Long> is = new SimpleFrequentItemSet<Long>(k);
@@ -72,17 +88,17 @@ public class RPHashMultiProj implements Clusterer {
 		for (int i = 0; i < projections; i++) {
 			Projector p = new DBFriendlyProjection(so.getdim(),
 					dec.getDimensionality(), r.nextLong());
-			
+
 			List<float[]> noise = LSH.genNoiseTable(dec.getDimensionality(),
 					so.getNumBlur(), r,
 					dec.getErrorRadius() / dec.getDimensionality());
-			
+
 			lshfuncs[i] = new LSH(dec, p, hal, noise);
 		}
 
 		// add to frequent itemset the hashed Decoded randomly projected vector
 		while (vecs.hasNext()) {
-			float[] vec = vecs.next();
+
 			// iterate over the multiple projections
 			for (LSH lshfunc : lshfuncs) {
 				// could do a big parallel projection here
@@ -91,40 +107,49 @@ public class RPHashMultiProj implements Clusterer {
 					is.add(hh);
 				}
 			}
+			vec = vecs.next();
 		}
 
-		so.setPreviousTopID(is.getTop());
-		List<Float> countsAsFloats = new ArrayList<Float>();
-
-		for (long ct : is.getCounts())
-			countsAsFloats.add((float) ct);
-		so.setCounts(countsAsFloats);
-		return so;
+		// so.setPreviousTopID(is.getTop());
+		// List<Float> countsAsFloats = new ArrayList<Float>();
+		//
+		// for (long ct : is.getCounts())
+		// countsAsFloats.add((float) ct);
+		// so.setCounts(countsAsFloats);
+		return new List[] { is.getTop(), is.getCounts() };
 	}
 
 	/*
 	 * This is the second phase after the top ids have been in the reduce phase
 	 * aggregated
 	 */
-	public RPHashObject reduce() {
+	public static List<Centroid> mapphase2(List<Long>[] frequentItems) {
 
-//		Iterator<float[]> vecs = so.getVectorIterator();
-//		if (!vecs.hasNext())
-//			return so;
+		SimpleArrayReader so = new SimpleArrayReader(null,
+				frequentItems[0].size(), RPHashObject.DEFAULT_NUM_BLUR);
 		Iterator<float[]> vecs;
 		try {
-			vecs = new StreamObject("/var/rphash/data/data.mat", 0, false).getVectorIterator();
+			vecs = new StreamObject("/var/rphash/data/data.mat", 0, false)
+					.getVectorIterator();
 		} catch (IOException e) {
 			e.printStackTrace();
-			System.err.println("file not accessible or not found on cluster node!");
-			return so;
+			System.err
+					.println("file not accessible or not found on cluster node!");
+			return null;
 		}
+
+		float[] vec = vecs.next();
+		so.setdim(vec.length);
+		so.getDecoderType().setVariance(StatTests.variance(vec));
+
 		// make a set of k default centroid objects
 		ArrayList<Centroid> centroids = new ArrayList<Centroid>();
-		for (long id : so.getPreviousTopID())
-			centroids.add(new Centroid(so.getdim(), id, -1));
-		
-		
+
+		for (int i = 0; i < frequentItems.length; i++) {
+			centroids.add(new Centroid(so.getdim(), frequentItems[0].get(i),
+					-1, frequentItems[1].get(i)));
+		}
+
 		long[] hash;
 		int projections = so.getNumProjections();
 
@@ -146,7 +171,6 @@ public class RPHashMultiProj implements Clusterer {
 		}
 
 		while (vecs.hasNext()) {
-			float[] vec = vecs.next();
 			// iterate over the multiple projections
 			for (LSH lshfunc : lshfuncs) {
 				// could do a big parallel projection here
@@ -160,28 +184,29 @@ public class RPHashMultiProj implements Clusterer {
 					}
 				}
 			}
+			vec = vecs.next();
 		}
 
 		List<float[]> centvectors = new ArrayList<float[]>();
-		List<Float> centcounts = new ArrayList<Float>();
+		List<Long> centcounts = new ArrayList<Long>();
 
 		for (Centroid cent : centroids) {
 			centvectors.add(cent.centroid());
-			centcounts.add((float) cent.getCount());
+			centcounts.add(cent.getCount());
 		}
-		so.setCentroids(centvectors);
-		so.setCounts(centcounts);
+		// so.setCentroids(centvectors);
+		// so.setCounts(centcounts);
 
-		return so;
+		return centroids;
 	}
 
 	private List<float[]> centroids = null;
 	private RPHashObject so;
 
 	public RPHashMultiProj(List<float[]> data, int k) {
-		variance = StatTests.varianceSample(data, .01f);
-		so = new SimpleArrayReader(data, k,RPHashObject.DEFAULT_NUM_BLUR);
-		so.getDecoderType().setVariance(variance);
+		// variance = StatTests.varianceSample(data, .01f);
+		so = new SimpleArrayReader(data, k, RPHashObject.DEFAULT_NUM_BLUR);
+		// so.getDecoderType().setVariance(variance);
 	}
 
 	// public RPHashMultiProj(List<float[]> data, int k, int numProjections) {
@@ -218,18 +243,16 @@ public class RPHashMultiProj implements Clusterer {
 
 	private void run() {
 
-		map();
-		reduce();
+		mapphase1(so.getk());
+		mapphase2(new List[] { so.getPreviousTopID(), so.getCounts() });
 		centroids = new Kmeans(so.getk(), so.getCentroids()).getCentroids();
 	}
 
 	public static void main(String[] args) {
 
-		
 		int k = 10;
 		int d = 1000;
 		int n = 20000;
-
 
 		float var = 1.5f;
 		for (float f = var; f < 4.1; f += .2f) {
@@ -243,8 +266,8 @@ public class RPHashMultiProj implements Clusterer {
 				List<float[]> aligned = VectorUtil.alignCentroids(
 						rphit.getCentroids(), gen.medoids());
 				System.out.println(f + ":" + StatTests.PR(aligned, gen) + ":"
-						+ StatTests.WCSSE(aligned, gen.getData()) + ":" + duration
-						/ 1000000000f);
+						+ StatTests.WCSSE(aligned, gen.getData()) + ":"
+						+ duration / 1000000000f);
 				System.gc();
 			}
 		}
@@ -253,6 +276,117 @@ public class RPHashMultiProj implements Clusterer {
 	@Override
 	public RPHashObject getParam() {
 		return so;
+	}
+
+	public static List<Long>[] reducephase1(List<Long>[] topidsandcounts1,
+			List<Long>[] topidsandcounts2) {
+
+		int k = Math
+				.max(topidsandcounts1[0].size(), topidsandcounts2[0].size());
+
+		// merge lists
+		HashMap<Long, Long> idsandcounts = new HashMap<Long, Long>();
+		for (int i = 0; i < topidsandcounts1[0].size(); i++) {
+			idsandcounts.put(topidsandcounts1[0].get(i), topidsandcounts1[1].get(i));
+		}
+
+		//merge in set 2's counts and hashes
+		for (int i = 0; i < topidsandcounts2[0].size(); i++) {
+			Long id = topidsandcounts2[0].get(i);
+			Long count = topidsandcounts2[1].get(i);
+
+			if (idsandcounts.containsKey(id)) {
+				idsandcounts.put(id, idsandcounts.get(id) + count);
+			} else {
+				idsandcounts.put(id, count);
+			}
+		}
+
+		// truncate list
+		int count = 0;
+		
+		List<Long> retids    = new ArrayList<Long>();
+		List<Long> retcounts = new ArrayList<Long>();
+		
+		LinkedHashMap<Long,Long> map = sortByValue(idsandcounts);
+
+		//reverse ordered greatest first
+		List<Map.Entry<Long, Long>> s = new ArrayList<Map.Entry<Long, Long>>(map.entrySet());
+		Collections.sort(s, Collections.reverseOrder());
+		
+		//truncate
+		for(Map.Entry<Long, Long> entry : s) {
+			retids.add(entry.getKey());
+			retcounts.add(entry.getValue());
+			if(count++==k)
+			{
+				return new List[]{retids,retcounts};
+			}
+		}
+		
+		return new List[]{retids,retcounts};
+		
+		
+	}
+
+	
+	
+	public static <K, V extends Comparable<? super V>> LinkedHashMap<K, V> sortByValue(
+			Map<K, V> map) {
+		LinkedHashMap<K, V> result = new LinkedHashMap<>();
+		Stream<Map.Entry<K, V>> st = map.entrySet().stream();
+
+		st.sorted(Map.Entry.comparingByValue()).forEachOrdered(
+				e -> result.put(e.getKey(), e.getValue()));
+
+		return result;
+	}
+
+	public static List<Centroid> reducephase2(List<Centroid> cents1,
+			List<Centroid> cents2) {
+		int k = Math.max(cents1.size(), cents2.size());
+
+		//create a map of centroid hash ids to the centroids idx
+		HashMap<Long,Integer> idsToIdx = new HashMap<>();
+		for (int i = 0;i<cents1.size();i++) 
+		{
+			for(Long id: cents1.get(i).ids)
+			{
+				idsToIdx.put(id, i);
+			}	
+		}
+
+		// merge centroids from centroid set 2
+		for(Centroid vec : cents2)
+		{
+			boolean matchnotfound = true;
+			for(Long id: vec.ids)
+			{
+				if(idsToIdx.containsKey(id))
+				{
+					cents1.get(idsToIdx.get(id)).updateVec(vec);
+					matchnotfound = false;
+					break;//break out of this for loop
+				}
+			}
+			if(matchnotfound)cents1.add(vec);
+		}
+			
+		//truncate the list to the top k centroids
+		TreeSet<Centroid> centsAndCounts = new TreeSet<>();
+		for(Centroid vec : cents1)
+		{
+			centsAndCounts.add(vec);
+		}
+		
+		List<Centroid> retcentroids = new ArrayList<Centroid>();
+		
+		//read in reverse order
+		while(!centsAndCounts.isEmpty() && retcentroids.size()<k){
+			retcentroids.add(centsAndCounts.pollLast());
+		}
+
+		return retcentroids;
 	}
 
 }

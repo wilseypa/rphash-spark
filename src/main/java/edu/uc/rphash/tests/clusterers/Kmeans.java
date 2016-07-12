@@ -5,6 +5,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
+import edu.uc.rphash.Centroid;
 import edu.uc.rphash.Clusterer;
 import edu.uc.rphash.Readers.RPHashObject;
 import edu.uc.rphash.Readers.SimpleArrayReader;
@@ -17,6 +18,7 @@ public class Kmeans implements Clusterer {
 	int k;
 	int n;
 	List<float[]> data;
+
 	public int getK() {
 		return k;
 	}
@@ -80,6 +82,22 @@ public class Kmeans implements Clusterer {
 
 	public Kmeans() {
 		// TODO Auto-generated constructor stub
+	}
+
+	public Kmeans(int k, List<Centroid> centroids, boolean useweights) {
+		this.k = k;
+		this.data = new ArrayList<float[]>();
+		if (useweights) {
+			this.weights = new ArrayList<Float>();
+			for (Centroid c : centroids) {
+				weights.add((float) c.getCount());
+				data.add(c.centroid());
+			}
+		} else {
+			for (Centroid c : centroids) {
+				data.add(c.centroid());
+			}
+		}
 	}
 
 	public float[] computerCentroid(List<Integer> vectors, List<float[]> data) {
@@ -155,9 +173,9 @@ public class Kmeans implements Clusterer {
 			} else
 				workingdata.add(v);
 		}
-		
+
 		int maxout = 0;
-		//loop until there are no more nullsets
+		// loop until there are no more nullsets
 		boolean nullset = false;
 		do {
 			this.clusters = new ArrayList<List<Integer>>(k);
@@ -165,28 +183,27 @@ public class Kmeans implements Clusterer {
 			ArrayList<Integer> shufflelist = new ArrayList<Integer>(data.size());
 			for (int i = 0; i < data.size(); i++)
 				shufflelist.add(i);
-			
+
 			for (int i = 0; i < k; i++) {
 				List<Integer> tmp = new LinkedList<Integer>();
 				tmp.add(shufflelist.remove(0));
-				
-				for (int j = 1; j < workingdata.size() / k  ; j++) {
+
+				for (int j = 1; j < workingdata.size() / k; j++) {
 					int nxt = r.nextInt(shufflelist.size());
 					tmp.add(shufflelist.remove(nxt));
 				}
 				this.clusters.add(tmp);
 			}
 
-	
 			cluster(maxiters, swaps, n, workingdata, clusters);
-			
+
 			nullset = false;
-			
+
 			for (List<Integer> cluster : clusters) {
 				nullset |= (cluster.size() == 0);
 			}
-			
-		} while (nullset && ++maxout<100);
+
+		} while (nullset && ++maxout < 100);
 		if (maxout == 100)
 			System.err.println("Warning: MaxIterations Reached Outer");
 
@@ -220,7 +237,8 @@ public class Kmeans implements Clusterer {
 	@Override
 	public RPHashObject getParam() {
 
-		return new SimpleArrayReader(this.data, k,RPHashObject.DEFAULT_NUM_BLUR);
+		return new SimpleArrayReader(this.data, k,
+				RPHashObject.DEFAULT_NUM_BLUR);
 	}
 
 }

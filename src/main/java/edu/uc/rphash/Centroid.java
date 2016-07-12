@@ -4,7 +4,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 
 import edu.uc.rphash.Readers.RPVector;
 
-public class Centroid {
+public class Centroid implements Comparable<Centroid> {
 	private float[] vec;
 	private long count;
 	public ConcurrentSkipListSet<Long> ids;
@@ -18,6 +18,16 @@ public class Centroid {
 		this.ids = new ConcurrentSkipListSet<Long>();
 		this.projectionID = projectionID;
 		ids.add(id);
+	}
+	
+	public Centroid(int dim, long id,int projectionID,Long long1) {
+		this.vec = new float[dim];
+		this.count = 0;
+		this.id = id;
+		this.ids = new ConcurrentSkipListSet<Long>();
+		this.projectionID = projectionID;
+		ids.add(id);
+		this.count = long1;
 	}
 
 	public Centroid(float[] data,int projectionID) {
@@ -84,6 +94,11 @@ public class Centroid {
 			return ((Centroid)obj).id == id;
 		}
 		return false;
+	}
+
+	@Override
+	public int compareTo(Centroid o) {
+		return (int) (this.count-o.count);
 	}
 	
 

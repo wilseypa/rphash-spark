@@ -15,6 +15,8 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.Function2;
+import org.apache.spark.sql.SparkSession;
 
 import edu.uc.rphash.Readers.RPHashObject;
 import edu.uc.rphash.Readers.SimpleArrayReader;
@@ -71,47 +73,89 @@ public class RPHash {
 
 		boolean raw = false;
 
-		if (args.length == 3) {
-			SparkConf conf = new SparkConf().setMaster("local[4]").setAppName("RPHashSimple_Spark");
-			JavaSparkContext sc = new JavaSparkContext(conf);
-			JavaRDD<String> dataFileAsString = sc.textFile("/home/anindya/Desktop/dataset.csv");
-			dataset = dataFileAsString.map(new Function<String, List<Float>>() {
-				public List<Float> call(String s) {
-					List<String> stringVector = Arrays.asList(s.split(","));
-					List<Float> floatVector = new ArrayList<>();
-					for (String element : stringVector)
-						floatVector.add(Float.valueOf(element));
-					return floatVector;
-				}
-			});
-			RPHashSimple clusterer = new RPHashSimple(dataset, k);
-			VectorUtil.writeFile(new File(outputFile + "."
-					+ clusterer.getClass().getName()),
-					clusterer.getCentroids(), raw);
-		}
+		if (args.length == 3) {	
+//			SparkConf conf = new SparkConf().setMaster("local[4]").setAppName("RPHashMultiProj_Spark");
+//			
+//			
+//			
+//			JavaSparkContext sc = new JavaSparkContext(conf);
+//			
+//			JavaRDD<String> dataFileAsString = sc.textFile("/home/anindya/Desktop/dataset.csv");
+//			
+//			
+//			dataset = dataFileAsString.map(new Function<String, List<Float>>() {
+//				public List<Float> call(String s) {
+//					List<String> stringVector = Arrays.asList(s.split(","));
+//					List<Float> floatVector = new ArrayList<>();
+//					for (String element : stringVector)
+//						floatVector.add(Float.valueOf(element));
+//					return floatVector;
+//				}
+//			});
+//			RPHashSimple clusterer = new RPHashSimple(dataset, k);
+//			VectorUtil.writeFile(new File(outputFile + "."
+//					+ clusterer.getClass().getName()),
+//					clusterer.getCentroids(), raw);
+		
+	    SparkSession spark = SparkSession
+	      .builder()
+	      .appName("RPHash")
+	      .getOrCreate();
 
-		/*
-		List<String> truncatedArgs = new ArrayList<String>();
-		Map<String, String> taggedArgs = argsUI(args, truncatedArgs);
-		List<Clusterer> runs;
-		if (taggedArgs.containsKey("raw")) {
-			raw = Boolean.getBoolean(taggedArgs.get("raw"));
-			runs = runConfigs(truncatedArgs, taggedArgs, dataset, filename, true);
-		} else {
-			runs = runConfigs(truncatedArgs, taggedArgs, dataset, filename, false);
-		}
+	    JavaSparkContext jsc = new JavaSparkContext(spark.sparkContext());
 
-		if (taggedArgs.containsKey("streamduration")) {
-			System.out.println(taggedArgs.toString());
-			runStream(runs, outputFile,
-					Integer.parseInt(taggedArgs.get("streamduration")), k, raw);
-			return;
-		}
-		// run remaining, read file into ram
-		data = VectorUtil.readFile(filename, raw);
-		runner(runs, outputFile, raw);
-		*/
+	    //make a dummy list of integers for each compute node
+	    int slices =  4 ;//number of compute nodes
+	    int n = slices;
+	    List<Object> l = new ArrayList<>(n);
+	    for (int i = 0; i < n; i++) {
+	      l.add(i);
+	    }
 
+	    JavaRDD<Object> dataSet = jsc.parallelize(l, slices);
+
+	    List<Long>[] topids = dataSet.map(new Function<Object, List<Long>[]>() 
+	    {
+	      @Override
+	      public List<Long>[] call(Object integer) {
+	        return RPHashMultiProj.mapphase1(k);
+	      }
+	      
+	      
+	    }).reduce(new Function2<List<Long>[], List<Long>[], List<Long>[]>() {
+
+		@Override
+		public List<Long>[] call(List<Long>[] topidsandcounts1, List<Long>[] topidsandcounts2) throws Exception {
+
+			return RPHashMultiProj.reducephase1(topidsandcounts1,topidsandcounts2);
+		}
+	    });
+	    
+	    List<Centroid> centroids = dataSet.map(new Function<Object, List<Centroid>>() 
+	    	    {
+					private static final long serialVersionUID = 1L;
+
+				@Override
+	    	      public List<Centroid> call(Object o) {
+	    	        return RPHashMultiProj.mapphase2(topids);
+	    	      }
+	    	    }).
+	    	    reduce(new Function2<List<Centroid>, List<Centroid>, List<Centroid>>() {
+
+				private static final long serialVersionUID = 1L;
+
+				@Override
+	    		public List<Centroid> call(List<Centroid> cents1, List<Centroid> cents2) throws Exception {
+	    			
+	    			return RPHashMultiProj.reducephase2(cents1,cents2);
+	    		}
+	    	    });
+	    	       
+	    //offline cluster
+	    VectorUtil.writeFile(new File(outputFile + ".mat"),new Kmeans(k, centroids,true).getCentroids(), false);
+
+	    spark.stop();
+	  }
 	}
 
 	public static void runner(List<Clusterer> runitems, String outputFile,

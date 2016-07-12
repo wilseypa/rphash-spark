@@ -177,6 +177,10 @@ public class SimpleArrayReader implements RPHashObject {
 			this.dim = data.get(0).length;
 		return dim;
 	}
+	
+	public void setdim(int dim) {
+		this.dim = dim;
+	}
 
 	public long getHashmod() {
 		return hashmod;
