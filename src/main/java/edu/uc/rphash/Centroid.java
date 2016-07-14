@@ -91,14 +91,14 @@ public class Centroid implements Comparable<Centroid> {
 	@Override
 	public boolean equals(Object obj) {
 		if(obj instanceof Centroid){
-			return ((Centroid)obj).id == id;
+			return ((Centroid)obj).ids.containsAll(ids);
 		}
 		return false;
 	}
 
 	@Override
 	public int compareTo(Centroid o) {
-		return (int) (this.count-o.count);
+		return (int) (o.count-this.count);
 	}
 	
 

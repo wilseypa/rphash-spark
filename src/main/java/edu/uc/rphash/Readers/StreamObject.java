@@ -259,7 +259,10 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 	@Override
 	public boolean hasNext() {
 		try {
-			return inputStream.available() > 0;
+			
+			boolean hasnext = inputStream.available() > 0;
+			if(!hasnext)inputStream.close();
+			return hasnext;
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

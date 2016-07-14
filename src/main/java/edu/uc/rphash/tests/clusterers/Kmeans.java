@@ -94,7 +94,9 @@ public class Kmeans implements Clusterer {
 				data.add(c.centroid());
 			}
 		} else {
+			this.weights = new ArrayList<Float>();
 			for (Centroid c : centroids) {
+				weights.add(1f);
 				data.add(c.centroid());
 			}
 		}
