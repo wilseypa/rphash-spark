@@ -65,7 +65,7 @@ public class RPHash {
 		}
 
 		List<float[]> data = null;
-		JavaRDD<List<Float>> dataset = null;
+//		JavaRDD<List<Float>> dataset = null;
 
 		String filename = args[0];
 		int k = Integer.parseInt(args[1]);
@@ -74,11 +74,12 @@ public class RPHash {
 		boolean raw = false;
 
 		if (args.length == 3) {	
-//			SparkConf conf = new SparkConf().setMaster("local[4]").setAppName("RPHashMultiProj_Spark");
+			SparkConf conf = new SparkConf().setAppName("RPHashMultiProj_Spark");
 //			
 //			
 //			
-//			JavaSparkContext sc = new JavaSparkContext(conf);
+			JavaSparkContext sc = new JavaSparkContext(conf);
+//			JavaRDD<Object> dataSet = sc.emptyRDD();
 //			
 //			JavaRDD<String> dataFileAsString = sc.textFile("/home/anindya/Desktop/dataset.csv");
 //			
@@ -97,12 +98,12 @@ public class RPHash {
 //					+ clusterer.getClass().getName()),
 //					clusterer.getCentroids(), raw);
 		
-	    SparkSession spark = SparkSession
-	      .builder()
-	      .appName("RPHash")
-	      .getOrCreate();
+//	    SparkSession spark = SparkSession
+//	      .builder()
+//	      .appName("RPHash")
+//	      .getOrCreate();
 
-	    JavaSparkContext jsc = new JavaSparkContext(spark.sparkContext());
+//	    JavaSparkContext jsc = new JavaSparkContext(spark.sparkContext());
 
 	    //make a dummy list of integers for each compute node
 	    int slices =  4 ;//number of compute nodes
@@ -112,7 +113,7 @@ public class RPHash {
 	      l.add(i);
 	    }
 
-	    JavaRDD<Object> dataSet = jsc.parallelize(l, slices);
+	    JavaRDD<Object> dataSet = sc.parallelize(l, slices);
 
 	    List<Long>[] topids = dataSet.map(new Function<Object, List<Long>[]>() 
 	    {
@@ -154,7 +155,7 @@ public class RPHash {
 	    //offline cluster
 	    VectorUtil.writeFile(new File(outputFile + ".mat"),new Kmeans(k, centroids,true).getCentroids(), false);
 
-	    spark.stop();
+//	    spark.stop();
 	  }
 	}
 

@@ -57,7 +57,7 @@ public class RPHashMultiProj implements Clusterer {
 				RPHashObject.DEFAULT_NUM_BLUR);
 		Iterator<float[]> vecs;
 		try {
-			vecs = new StreamObject("/var/rphash/data/data.mat", 0, false)
+			vecs = new StreamObject("/work/moitraaa/rphash/data/data.mat", 0, false)
 					.getVectorIterator();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -129,7 +129,7 @@ public class RPHashMultiProj implements Clusterer {
 				frequentItems[0].size(), RPHashObject.DEFAULT_NUM_BLUR);
 		Iterator<float[]> vecs;
 		try {
-			vecs = new StreamObject("/var/rphash/data/data.mat", 0, false)
+			vecs = new StreamObject("/work/moitraaa/rphash/data/data.mat", 0, false)
 					.getVectorIterator();
 		} catch (IOException e) {
 			e.printStackTrace();
