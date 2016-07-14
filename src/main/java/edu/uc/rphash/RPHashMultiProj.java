@@ -3,11 +3,13 @@ package edu.uc.rphash;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
@@ -312,7 +314,8 @@ public class RPHashMultiProj implements Clusterer {
 
 		//reverse ordered greatest first
 		List<Map.Entry<Long, Long>> s = new ArrayList<Map.Entry<Long, Long>>(map.entrySet());
-		Collections.sort(s, Collections.reverseOrder());
+		
+//		Collections.sort(s, Collections.reverseOrder());
 		
 		//truncate
 		for(Map.Entry<Long, Long> entry : s) {
@@ -331,13 +334,24 @@ public class RPHashMultiProj implements Clusterer {
 
 	
 	
-	public static <K, V extends Comparable<? super V>> LinkedHashMap<K, V> sortByValue(
-			Map<K, V> map) {
-		LinkedHashMap<K, V> result = new LinkedHashMap<>();
-		Stream<Map.Entry<K, V>> st = map.entrySet().stream();
+	public static LinkedHashMap<Long, Long> sortByValue(
+			Map<Long, Long> map) {
+		LinkedHashMap<Long, Long> result = new LinkedHashMap<>();
+		Stream<Map.Entry<Long, Long>> st = map.entrySet().stream();
 
-		st.sorted(Map.Entry.comparingByValue()).forEachOrdered(
-				e -> result.put(e.getKey(), e.getValue()));
+		st.sorted(new Comparator<Map.Entry<Long, Long>>(){
+			@Override
+			public int compare(Entry<Long, Long> o1, Entry<Long, Long> o2) {
+				long l1 = o1.getValue().longValue();
+				long l2 = o2.getValue().longValue();
+				return (int) (l2-l1);
+			}	
+		});
+				
+				
+				
+//				Map.Entry.comparingByValue()).forEachOrdered(
+//				e -> result.put(e.getKey(), e.getValue()));
 
 		return result;
 	}
