@@ -59,7 +59,7 @@ public class RPHashMultiProj implements Clusterer {
 				RPHashObject.DEFAULT_NUM_BLUR);
 		Iterator<float[]> vecs;
 		try {
-			vecs = new StreamObject("/work/moitraaa/rphash/data/data.mat", 0, false)
+			vecs = new StreamObject("/var/rphash/data/data.mat", 0, false)
 					.getVectorIterator();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -131,7 +131,7 @@ public class RPHashMultiProj implements Clusterer {
 				frequentItems[0].size(), RPHashObject.DEFAULT_NUM_BLUR);
 		Iterator<float[]> vecs;
 		try {
-			vecs = new StreamObject("/work/moitraaa/rphash/data/data.mat", 0, false)
+			vecs = new StreamObject("/var/rphash/data/data.mat", 0, false)
 					.getVectorIterator();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -282,7 +282,8 @@ public class RPHashMultiProj implements Clusterer {
 
 	public static List<Long>[] reducephase1(List<Long>[] topidsandcounts1,
 			List<Long>[] topidsandcounts2) {
-
+		if(topidsandcounts1==null )return topidsandcounts2;
+		if(topidsandcounts2==null )return topidsandcounts1;
 		int k = Math
 				.max(topidsandcounts1[0].size(), topidsandcounts2[0].size());
 
@@ -314,8 +315,8 @@ public class RPHashMultiProj implements Clusterer {
 
 		//reverse ordered greatest first
 		List<Map.Entry<Long, Long>> s = new ArrayList<Map.Entry<Long, Long>>(map.entrySet());
-		
 //		Collections.sort(s, Collections.reverseOrder());
+
 		
 		//truncate
 		for(Map.Entry<Long, Long> entry : s) {
