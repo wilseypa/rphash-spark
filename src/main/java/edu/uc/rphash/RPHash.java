@@ -106,14 +106,14 @@ public class RPHash {
 //	    JavaSparkContext jsc = new JavaSparkContext(spark.sparkContext());
 
 	    //make a dummy list of integers for each compute node
-	    int slices =  4 ;//number of compute nodes
+	    int slices =  3 ;//number of compute nodes
 	    int n = slices;
 	    List<Object> l = new ArrayList<>(n);
 	    for (int i = 0; i < n; i++) {
 	      l.add(i);
 	    }
 
-	    JavaRDD<Object> dataSet = sc.parallelize(l, slices);
+	    JavaRDD<Object> dataSet = sc.parallelize(l);
 
 	    List<Long>[] topids = dataSet.map(new Function<Object, List<Long>[]>() 
 	    {
