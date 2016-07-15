@@ -1,10 +1,11 @@
 package edu.uc.rphash;
 
+import java.io.Serializable;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 import edu.uc.rphash.Readers.RPVector;
 
-public class Centroid implements Comparable<Centroid> {
+public class Centroid implements Comparable<Centroid>, Serializable {
 	private float[] vec;
 	private long count;
 	public ConcurrentSkipListSet<Long> ids;
