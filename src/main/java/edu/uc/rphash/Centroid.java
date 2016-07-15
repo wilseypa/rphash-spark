@@ -1,13 +1,17 @@
 package edu.uc.rphash;
 
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.HashSet;
 
-import edu.uc.rphash.Readers.RPVector;
 
-public class Centroid implements Comparable<Centroid> {
+public final class Centroid implements Comparable<Centroid> , java.io.Serializable{
+	
+	private static final long serialVersionUID = -7252059106592431985L;
 	private float[] vec;
 	private long count;
-	public ConcurrentSkipListSet<Long> ids;
+	public HashSet<Long> ids;
 	public long id;
 	public int projectionID;
 
@@ -15,7 +19,7 @@ public class Centroid implements Comparable<Centroid> {
 		this.vec = new float[dim];
 		this.count = 0;
 		this.id = id;
-		this.ids = new ConcurrentSkipListSet<Long>();
+		this.ids = new HashSet<Long>();
 		this.projectionID = projectionID;
 		ids.add(id);
 	}
@@ -24,7 +28,7 @@ public class Centroid implements Comparable<Centroid> {
 		this.vec = new float[dim];
 		this.count = 0;
 		this.id = id;
-		this.ids = new ConcurrentSkipListSet<Long>();
+		this.ids = new HashSet<Long>();
 		this.projectionID = projectionID;
 		ids.add(id);
 		this.count = long1;
@@ -32,14 +36,14 @@ public class Centroid implements Comparable<Centroid> {
 
 	public Centroid(float[] data,int projectionID) {
 		this.vec = data;
-		this.ids = new ConcurrentSkipListSet<Long>();
+		this.ids = new HashSet<Long>();
 		this.projectionID = projectionID;
 		this.count = 1;
 	}
 
 	public Centroid(float[] data, long id,int projectionID) {
 		this.vec = data;
-		this.ids = new ConcurrentSkipListSet<Long>();
+		this.ids = new HashSet<Long>();
 		ids.add(id);
 		this.id = id;
 		this.projectionID = projectionID;
@@ -95,11 +99,39 @@ public class Centroid implements Comparable<Centroid> {
 		}
 		return false;
 	}
+	
+	
+
+	@Override
+	public int hashCode() {
+		int hashcode = 0;
+		for(Long id:ids)hashcode^=id.hashCode();
+		return hashcode;
+	}
 
 	@Override
 	public int compareTo(Centroid o) {
 		return (int) (o.count-this.count);
 	}
 	
-
+	/**
+	* Always treat de-serialization as a full-blown constructor, by validating
+	* the final state of the de-serialized object.
+	*/
+	private void readObject(ObjectInputStream aInputStream)
+	throws ClassNotFoundException, IOException {
+	    // always perform the default de-serialization first
+	    aInputStream.defaultReadObject();
+	}
+	 
+	/**
+	* This is the default implementation of writeObject. Customise if
+	* necessary.
+	*/
+	private void writeObject(ObjectOutputStream aOutputStream)
+	throws IOException {
+	    // perform the default serialization for all non-transient, non-static
+	    // fields
+	    aOutputStream.defaultWriteObject();
+	}
 }

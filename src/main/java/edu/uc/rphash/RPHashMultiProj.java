@@ -1,7 +1,9 @@
 package edu.uc.rphash;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -50,17 +52,13 @@ public class RPHashMultiProj implements Clusterer {
 	/**
 	 * @return
 	 */
-	public static List<Long>[] mapphase1(int k) {
-
-		// Iterator<float[]> vecs = so.getVectorIterator();
-		// if (!vecs.hasNext())
-		// return so;
+	public static List<Long>[] mapphase1(int k,String inputfile) {
 
 		SimpleArrayReader so = new SimpleArrayReader(null, k,
 				RPHashObject.DEFAULT_NUM_BLUR);
 		Iterator<float[]> vecs;
 		try {
-			vecs = new StreamObject("/var/rphash/data/data.mat", 0, false)
+			vecs = new StreamObject(inputfile, 0, false)
 					.getVectorIterator();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -75,8 +73,6 @@ public class RPHashMultiProj implements Clusterer {
 
 		long[] hash;
 		int projections = so.getNumProjections();
-
-		// int k = (int) (so.getk() * projections) * 5;
 
 		// initialize our counter
 		ItemSet<Long> is = new SimpleFrequentItemSet<Long>(k*projections);
@@ -101,7 +97,6 @@ public class RPHashMultiProj implements Clusterer {
 
 		// add to frequent itemset the hashed Decoded randomly projected vector
 		while (vecs.hasNext()) {
-			
 			// iterate over the multiple projections
 			for (LSH lshfunc : lshfuncs) {
 				// could do a big parallel projection here
@@ -109,17 +104,9 @@ public class RPHashMultiProj implements Clusterer {
 				for (long hh : hash) {
 					is.add(hh);
 				}
-				
 			}
 			vec = vecs.next();
 		}
-
-		// so.setPreviousTopID(is.getTop());
-		// List<Float> countsAsFloats = new ArrayList<Float>();
-		//
-		// for (long ct : is.getCounts())
-		// countsAsFloats.add((float) ct);
-		// so.setCounts(countsAsFloats);
 		return new List[] { is.getTop(), is.getCounts() };
 	}
 
@@ -127,13 +114,13 @@ public class RPHashMultiProj implements Clusterer {
 	 * This is the second phase after the top ids have been in the reduce phase
 	 * aggregated
 	 */
-	public static List<Centroid> mapphase2(List<Long>[] frequentItems) {
+	public static List<Centroid> mapphase2(List<Long>[] frequentItems, String inputfile) {
 
 		SimpleArrayReader so = new SimpleArrayReader(null,
 				frequentItems[0].size(), RPHashObject.DEFAULT_NUM_BLUR);
 		Iterator<float[]> vecs;
 		try {
-			vecs = new StreamObject("/var/rphash/data/data.mat", 0, false)
+			vecs = new StreamObject(inputfile, 0, false)
 					.getVectorIterator();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -256,14 +243,16 @@ public class RPHashMultiProj implements Clusterer {
 	}
 
 	private void run() throws IOException {
+		String fs = "/var/rphash/data/data.mat";
+		List<Long>[] l1 = mapphase1(so.getk(),fs);
+		List<Long>[] l2 = mapphase1(so.getk(),fs);
+		List<Long>[] lres = reducephase1(l1,l2);
 
-		List[] l1 = mapphase1(so.getk());
-		List[] l2 = mapphase1(so.getk());
-		List[] lres = reducephase1(l1,l2);
+		List<Centroid> c1 = mapphase2(lres,fs);
+		List<Centroid> c2 = mapphase2(lres,fs);
 
-		List<Centroid> c1 = mapphase2(lres);
-		List<Centroid> c2 = mapphase2(lres);
-
+		new ObjectOutputStream(new ByteArrayOutputStream()).writeObject(c1);
+		
 		List<Centroid> cres = reducephase2(c1,c2);
 		
 		centroids = new Kmeans(so.getk(), cres, false).getCentroids();
@@ -410,7 +399,6 @@ public class RPHashMultiProj implements Clusterer {
 		}
 		
 		Collections.sort(cents1);
-		List<Centroid> retcentroids = new ArrayList<Centroid>();
 
 		return cents1.subList(0, Math.min(k,cents1.size()));
 	}

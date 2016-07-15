@@ -67,7 +67,7 @@ public class RPHash {
 		List<float[]> data = null;
 //		JavaRDD<List<Float>> dataset = null;
 
-		String filename = args[0];
+		final String filename =  "/var/rphash/data/data.mat";// args[0];
 		int k = Integer.parseInt(args[1]);
 		String outputFile = args[2];
 
@@ -117,13 +117,16 @@ public class RPHash {
 
 	    List<Long>[] topids = dataSet.map(new Function<Object, List<Long>[]>() 
 	    {
-	      @Override
+			private static final long serialVersionUID = -7127935862696405148L;
+
+		@Override
 	      public List<Long>[] call(Object integer) {
-	        return RPHashMultiProj.mapphase1(k);
+	        return RPHashMultiProj.mapphase1(k,filename);
 	      }
 	      
 	      
 	    }).reduce(new Function2<List<Long>[], List<Long>[], List<Long>[]>() {
+			private static final long serialVersionUID = 4294461355112957651L;
 
 		@Override
 		public List<Long>[] call(List<Long>[] topidsandcounts1, List<Long>[] topidsandcounts2) throws Exception {
@@ -138,7 +141,7 @@ public class RPHash {
 
 				@Override
 	    	      public List<Centroid> call(Object o) {
-	    	        return RPHashMultiProj.mapphase2(topids);
+	    	        return RPHashMultiProj.mapphase2(topids,filename);
 	    	      }
 	    	    }).
 	    	    reduce(new Function2<List<Centroid>, List<Centroid>, List<Centroid>>() {
