@@ -1,17 +1,20 @@
 package edu.uc.rphash;
 
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.HashSet;
 
+import java.io.Serializable;
+import java.util.concurrent.ConcurrentSkipListSet;
 
-public final class Centroid implements Comparable<Centroid> , java.io.Serializable{
+public final class Centroid implements Comparable<Centroid> , Serializable{
 	
 	private static final long serialVersionUID = -7252059106592431985L;
+
 	private float[] vec;
 	private long count;
-	public HashSet<Long> ids;
+	public ConcurrentSkipListSet<Long> ids;
 	public long id;
 	public int projectionID;
 
@@ -19,7 +22,7 @@ public final class Centroid implements Comparable<Centroid> , java.io.Serializab
 		this.vec = new float[dim];
 		this.count = 0;
 		this.id = id;
-		this.ids = new HashSet<Long>();
+		this.ids = new ConcurrentSkipListSet<Long>();
 		this.projectionID = projectionID;
 		ids.add(id);
 	}
@@ -28,7 +31,7 @@ public final class Centroid implements Comparable<Centroid> , java.io.Serializab
 		this.vec = new float[dim];
 		this.count = 0;
 		this.id = id;
-		this.ids = new HashSet<Long>();
+		this.ids = new ConcurrentSkipListSet<Long>();
 		this.projectionID = projectionID;
 		ids.add(id);
 		this.count = long1;
@@ -36,14 +39,14 @@ public final class Centroid implements Comparable<Centroid> , java.io.Serializab
 
 	public Centroid(float[] data,int projectionID) {
 		this.vec = data;
-		this.ids = new HashSet<Long>();
+		this.ids = new ConcurrentSkipListSet<Long>();
 		this.projectionID = projectionID;
 		this.count = 1;
 	}
 
 	public Centroid(float[] data, long id,int projectionID) {
 		this.vec = data;
-		this.ids = new HashSet<Long>();
+		this.ids = new ConcurrentSkipListSet<Long>();
 		ids.add(id);
 		this.id = id;
 		this.projectionID = projectionID;
