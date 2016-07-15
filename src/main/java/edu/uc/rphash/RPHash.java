@@ -135,28 +135,27 @@ public class RPHash {
 		}
 	    });
 	    
-	    List<Centroid> centroids = dataSet.map(new Function<Object, List<Centroid>>() 
+	    Object[] centroids = dataSet.map(new Function<Object, Object[]>() 
 	    	    {
 					private static final long serialVersionUID = 1L;
 
 				@Override
-	    	      public List<Centroid> call(Object o) {
+	    	      public Object[] call(Object o) {
 	    	        return RPHashMultiProj.mapphase2(topids,filename);
 	    	      }
 	    	    }).
-	    	    reduce(new Function2<List<Centroid>, List<Centroid>, List<Centroid>>() {
+	    	    reduce(new Function2<Object[], Object[], Object[]>() {
 
 				private static final long serialVersionUID = 1L;
 
 				@Override
-	    		public List<Centroid> call(List<Centroid> cents1, List<Centroid> cents2) throws Exception {
-	    			
+	    		public Object[] call(Object[] cents1, Object[] cents2) throws Exception {
 	    			return RPHashMultiProj.reducephase2(cents1,cents2);
 	    		}
 	    	    });
 	    	       
 	    //offline cluster
-	    VectorUtil.writeFile(new File(outputFile + ".mat"),new Kmeans(k, centroids,true).getCentroids(), false);
+	    VectorUtil.writeFile(new File(outputFile + ".mat"),new Kmeans(k, (List)centroids[0]).getCentroids(), false);
 
 //	    spark.stop();
 	  }

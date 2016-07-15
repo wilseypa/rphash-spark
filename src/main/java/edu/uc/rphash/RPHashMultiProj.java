@@ -16,6 +16,7 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Stream;
 
 import edu.uc.rphash.Readers.RPHashObject;
@@ -114,7 +115,7 @@ public class RPHashMultiProj implements Clusterer {
 	 * This is the second phase after the top ids have been in the reduce phase
 	 * aggregated
 	 */
-	public static List<Centroid> mapphase2(List<Long>[] frequentItems, String inputfile) {
+	public static Object[] mapphase2(List<Long>[] frequentItems, String inputfile) {
 
 		SimpleArrayReader so = new SimpleArrayReader(null,
 				frequentItems[0].size(), RPHashObject.DEFAULT_NUM_BLUR);
@@ -181,16 +182,19 @@ public class RPHashMultiProj implements Clusterer {
 		}
 
 		List<float[]> centvectors = new ArrayList<float[]>();
-		List<Long> centcounts = new ArrayList<Long>();
 
+		List<ConcurrentSkipListSet<Long>> centids = new ArrayList<ConcurrentSkipListSet<Long>>();
+		List<Long> centcounts = new ArrayList<Long>();
 		for (Centroid cent : centroids) {
 			centvectors.add(cent.centroid());
+			centids.add(cent.ids);
 			centcounts.add(cent.getCount());
+			
 		}
 		// so.setCentroids(centvectors);
 		// so.setCounts(centcounts);
 
-		return centroids;
+		return  new Object[]{centvectors,centids,centcounts};
 	}
 
 	private List<float[]> centroids = null;
@@ -248,14 +252,15 @@ public class RPHashMultiProj implements Clusterer {
 		List<Long>[] l2 = mapphase1(so.getk(),fs);
 		List<Long>[] lres = reducephase1(l1,l2);
 
-		List<Centroid> c1 = mapphase2(lres,fs);
-		List<Centroid> c2 = mapphase2(lres,fs);
+		Object[] c1 = mapphase2(lres,fs);
+		Object[] c2 = mapphase2(lres,fs);
 
+		//test serialization
 		new ObjectOutputStream(new ByteArrayOutputStream()).writeObject(c1);
 		
-		List<Centroid> cres = reducephase2(c1,c2);
+		Object[] cres = reducephase2(c1,c2);
 		
-		centroids = new Kmeans(so.getk(), cres, false).getCentroids();
+		centroids = new Kmeans(so.getk(),(List) cres[0]).getCentroids();
 		
 		System.out.println(StatTests.WCSSE(centroids, "/var/rphash/data/data.mat", false));
 	}
@@ -368,15 +373,26 @@ public class RPHashMultiProj implements Clusterer {
 		return result;
 	}
 
-	public static List<Centroid> reducephase2(List<Centroid> cents1,
-			List<Centroid> cents2) {
+	public static Object[] reducephase2(Object[] in1,
+			Object[] in2) {
 		
-		int k = Math.max(cents1.size(), cents2.size());
+		int k = Math.max(((List)in1[0]).size(),((List) in2[0]).size());
 
+		List<Centroid> cents1 = new ArrayList<Centroid>();
+		
 		//create a map of centroid hash ids to the centroids idx
 		HashMap<Long,Integer> idsToIdx = new HashMap<>();
-		for (int i = 0;i<cents1.size();i++) 
+		for (int i = 0;i<((List)in1[0]).size();i++) 
 		{
+			
+			Centroid vec = new Centroid((float[])((List)in1[0]).get(i),-1);
+
+			vec.ids = (ConcurrentSkipListSet<Long>) ((List)in1[1]).get(i);
+			vec.id = vec.ids.first();
+			vec.setCount((long)((List)in1[2]).get(i));
+			
+			cents1.add(vec);
+			
 			for(Long id: cents1.get(i).ids)
 			{
 				idsToIdx.put(id, i);
@@ -384,8 +400,14 @@ public class RPHashMultiProj implements Clusterer {
 		}
 
 		// merge centroids from centroid set 2
-		for(Centroid vec : cents2)
+		for (int i = 0;i<((List)in2[0]).size();i++) 
 		{
+			
+			Centroid vec = new Centroid((float[])((List)in2[0]).get(i),-1);
+			vec.ids = (ConcurrentSkipListSet<Long>) ((List)in2[1]).get(i);
+			vec.id = vec.ids.first();
+			vec.setCount((long)((List)in2[2]).get(i));
+			
 			boolean matchnotfound = true;
 			for(Long id: vec.ids)
 			{
@@ -398,9 +420,19 @@ public class RPHashMultiProj implements Clusterer {
 			if(matchnotfound)cents1.add(vec);
 		}
 		
-		Collections.sort(cents1);
+		Collections.sort(cents1);//reverse sort, centroid compareTo is inverted
+		
+		List<float[]> retcents = new ArrayList<float[]>();
+		List<ConcurrentSkipListSet<Long>> retids = new ArrayList<ConcurrentSkipListSet<Long>>();
+		List<Long> retcount = new ArrayList<Long>();
 
-		return cents1.subList(0, Math.min(k,cents1.size()));
+		for(Centroid c : cents1.subList(0, Math.min(k,cents1.size()))){
+			retcents.add(c.centroid());
+			retcount.add(c.getCount());
+			retids.add(c.ids);
+		}
+
+		return new Object[]{retcents,retids,retcount};
 	}
 
 }
