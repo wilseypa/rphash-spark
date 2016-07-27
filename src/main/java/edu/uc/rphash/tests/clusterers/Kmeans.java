@@ -1,11 +1,11 @@
 package edu.uc.rphash.tests.clusterers;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
-import edu.uc.rphash.Centroid;
 import edu.uc.rphash.Clusterer;
 import edu.uc.rphash.Readers.RPHashObject;
 import edu.uc.rphash.Readers.SimpleArrayReader;
@@ -14,11 +14,14 @@ import edu.uc.rphash.projections.Projector;
 import edu.uc.rphash.tests.generators.GenerateData;
 import edu.uc.rphash.util.VectorUtil;
 
+import org.apache.commons.lang3.ArrayUtils;
+import org.rosuda.JRI.REXP;
+import org.rosuda.JRI.Rengine;
+
 public class Kmeans implements Clusterer {
 	int k;
 	int n;
 	List<float[]> data;
-
 	public int getK() {
 		return k;
 	}
@@ -45,7 +48,7 @@ public class Kmeans implements Clusterer {
 
 	int projdim;
 
-	List<float[]> means;
+//	List<float[]> means;
 	List<List<Integer>> clusters;
 	List<Float> weights;
 
@@ -57,7 +60,7 @@ public class Kmeans implements Clusterer {
 		this.weights = new ArrayList<Float>(data.size());
 		for (int i = 0; i < data.size(); i++)
 			weights.add(1f);
-		means = null;
+//		means = null;
 	}
 
 	public Kmeans(int k, List<float[]> data, List<Float> weights) {
@@ -66,7 +69,7 @@ public class Kmeans implements Clusterer {
 		this.projdim = 0;
 		this.clusters = null;
 		this.weights = weights;
-		means = null;
+//		means = null;
 	}
 
 	public Kmeans(int k, List<float[]> data, int projdim) {
@@ -77,31 +80,14 @@ public class Kmeans implements Clusterer {
 		this.weights = new ArrayList<Float>(data.size());
 		for (int i = 0; i < data.size(); i++)
 			weights.add(1f);
-		means = null;
+//		means = null;
 	}
 
 	public Kmeans() {
 		// TODO Auto-generated constructor stub
 	}
 
-	public Kmeans(int k, List<Centroid> centroids, boolean useweights) {
-		this.k = k;
-		this.data = new ArrayList<float[]>();
-		if (useweights) {
-			this.weights = new ArrayList<Float>();
-			for (Centroid c : centroids) {
-				weights.add((float) c.getCount());
-				data.add(c.centroid());
-			}
-		} else {
-			this.weights = new ArrayList<Float>();
-			for (Centroid c : centroids) {
-				weights.add(1f);
-				data.add(c.centroid());
-			}
-		}
-	}
-
+	/*
 	public float[] computerCentroid(List<Integer> vectors, List<float[]> data) {
 		int d = data.get(0).length;
 		float[] centroid = new float[d];
@@ -122,6 +108,7 @@ public class Kmeans implements Clusterer {
 		}
 		return centroid;
 	}
+
 
 	ArrayList<Integer> weightTotals;
 
@@ -157,6 +144,7 @@ public class Kmeans implements Clusterer {
 		clusters = newClusters;
 		return swaps;
 	}
+	
 
 	private void run() {
 		int maxiters = 1000;
@@ -175,9 +163,9 @@ public class Kmeans implements Clusterer {
 			} else
 				workingdata.add(v);
 		}
-
+		
 		int maxout = 0;
-		// loop until there are no more nullsets
+		//loop until there are no more nullsets
 		boolean nullset = false;
 		do {
 			this.clusters = new ArrayList<List<Integer>>(k);
@@ -185,27 +173,28 @@ public class Kmeans implements Clusterer {
 			ArrayList<Integer> shufflelist = new ArrayList<Integer>(data.size());
 			for (int i = 0; i < data.size(); i++)
 				shufflelist.add(i);
-
+			
 			for (int i = 0; i < k; i++) {
 				List<Integer> tmp = new LinkedList<Integer>();
 				tmp.add(shufflelist.remove(0));
-
-				for (int j = 1; j < workingdata.size() / k; j++) {
+				
+				for (int j = 1; j < workingdata.size() / k  ; j++) {
 					int nxt = r.nextInt(shufflelist.size());
 					tmp.add(shufflelist.remove(nxt));
 				}
 				this.clusters.add(tmp);
 			}
 
+	
 			cluster(maxiters, swaps, n, workingdata, clusters);
-
+			
 			nullset = false;
-
+			
 			for (List<Integer> cluster : clusters) {
 				nullset |= (cluster.size() == 0);
 			}
-
-		} while (nullset && ++maxout < 100);
+			
+		} while (nullset && ++maxout<100);
 		if (maxout == 100)
 			System.err.println("Warning: MaxIterations Reached Outer");
 
@@ -222,12 +211,78 @@ public class Kmeans implements Clusterer {
 			System.err.println("Warning: MaxIterations Reached");
 		updateMeans(this.data);
 	}
+	*/
 
 	@Override
 	public List<float[]> getCentroids() {
-		if (means == null)
-			run();
-		return means;
+		// if (means == null) {
+		// run();
+
+		Rengine re = Rengine.getMainEngine();
+		if(re == null)
+			re = new Rengine(new String[] {"--no-save"}, false, null);
+		
+		if (!re.waitForR())
+			System.out.println("Cannot load R");
+		
+		List<float[]> kmeansCentroids = new ArrayList<float[]>();
+		ArrayList<float[]> workingdata = new ArrayList<float[]>();
+		for (float[] v : this.data)
+			workingdata.add(v);
+
+		// Convert List<float[]> data to a 2D array
+		float[][] matrix = new float[workingdata.size()][];
+		matrix = workingdata.toArray(matrix);
+
+		// Get the number of rows and columns of the 2D array
+		int rows = matrix.length;
+		String numRows = String.valueOf(rows);
+
+		int cols = matrix[0].length;
+		String numCols = String.valueOf(cols);
+
+		// Set k
+		String kAsString = String.valueOf(k);
+
+		// Convert the 2D array to a 1D double array to feed into R
+		double[] oneDArray = flatten(matrix);
+
+		// Feed the 1D array, k and number of rows and columns to R
+		re.assign("data", oneDArray);
+		re.assign("numberOfRows", numRows);
+		re.assign("numberOfCols", numCols);
+		re.assign("k", kAsString);
+
+		// Create the data matrix in R
+		re.eval("dataMatrix <- matrix(data, nrow = as.numeric(numberOfRows), ncol = as.numeric(numberOfCols), byrow = TRUE)");
+
+		// Run k-means in R
+		double[][] kmOut = re.eval("kmeans(dataMatrix, as.numeric(k), nstart = 25)$centers").asDoubleMatrix();
+
+		// Convert the 2D array back to List<float[]> format
+		for (int i = 0; i < kmOut.length; i++) {
+			float[] vector = new float[kmOut[0].length];
+			for (int j = 0; j < kmOut[0].length; j++)
+				vector[j] = (float) kmOut[i][j];
+			kmeansCentroids.add(vector);
+		}
+		re.end();
+		// }
+		return kmeansCentroids;
+	}
+
+	// Convert a 2D array to a 1D double array
+	public static double[] flatten(float[][] twoDArray) {
+		ArrayList<Double> oneDArray = new ArrayList<Double>();
+
+		for (int i = 0; i < twoDArray.length; i++)
+			for (int j = 0; j < twoDArray[i].length; j++)
+				oneDArray.add((double) twoDArray[i][j]);
+
+		Double[] doubles = oneDArray.toArray(new Double[0]);
+		double[] d = ArrayUtils.toPrimitive(doubles);
+
+		return d;
 	}
 
 	public static void main(String[] args) {
@@ -239,8 +294,7 @@ public class Kmeans implements Clusterer {
 	@Override
 	public RPHashObject getParam() {
 
-		return new SimpleArrayReader(this.data, k,
-				RPHashObject.DEFAULT_NUM_BLUR);
+		return new SimpleArrayReader(this.data, k, RPHashObject.DEFAULT_NUM_BLUR);
 	}
 
 }

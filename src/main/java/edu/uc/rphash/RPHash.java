@@ -75,6 +75,7 @@ public class RPHash {
 
 		if (args.length == 3) {	
 			SparkConf conf = new SparkConf().setAppName("RPHashMultiProj_Spark");
+//					                        .setMaster("local[4]");
 //			
 //			
 //			
