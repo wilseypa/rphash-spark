@@ -12,7 +12,7 @@ public interface RPHashObject {
 	 final static long DEFAULT_NUM_RANDOM_SEED = 38006359550206753L;
 	 final static int DEFAULT_NUM_DECODER_MULTIPLIER = 1;
 	 final static long DEFAULT_HASH_MODULUS = Long.MAX_VALUE;
-	 final static Decoder DEFAULT_INNER_DECODER =  new Spherical(64,4,1);
+	 final static Decoder DEFAULT_INNER_DECODER =  new Spherical(16,4,1);
 	 
 	int getk();
 	int getdim();
