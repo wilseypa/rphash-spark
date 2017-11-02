@@ -1,4 +1,4 @@
-package edu.uc.rphash.decoders;
+/*package edu.uc.rphash.decoders;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -7,27 +7,27 @@ import edu.uc.rphash.standardhash.MurmurHash;
 import edu.uc.rphash.util.VectorUtil;
 
 public class Golay implements Decoder{
-	        /**
+	        *//**
 	         * Utility methods that converts a binary string into and int.
 	         * 
 	         * @param str a string containing a binary number
 	         * 
 	         * @return the numeric value of the supplied string
-	         */
+	         *//*
 	        
 	    private static int fromBinary(final String str) {
 	        return Integer.parseInt(str, 2);
 	    }
 
-	    /**
+	    *//**
 	     * Mask that preserves the last 12 bits (bits in dataword).
-	     */
+	     *//*
 	    
 	    private static final int MASK = 0xfff; //== fromBinary("111111111111");
 	    
-	    /**
+	    *//**
 	     * Generator matrix for the code, multiplied with a dataword to generate a codeword.
-	     */
+	     *//*
 	    
 	    private static final int[] sGenerator = {
 
@@ -44,7 +44,7 @@ public class Golay implements Decoder{
 	            fromBinary("000000000010"),
 	            fromBinary("000000000001"),
 	         
-	            /* ALTERNATIVE MATRIX - UNUSED
+	             ALTERNATIVE MATRIX - UNUSED
 	            fromBinary("110111000101"),
 	            fromBinary("101110001011"),
 	            fromBinary("011100010111"),
@@ -57,7 +57,7 @@ public class Golay implements Decoder{
 	            fromBinary("101101110001"),
 	            fromBinary("011011100011"),
 	            fromBinary("111111111110"),
-	            */
+	            
 	            
 	            fromBinary("011111111111"),
 	            fromBinary("111011100010"),
@@ -73,9 +73,9 @@ public class Golay implements Decoder{
 	            fromBinary("101101110001"),
 	    };
 
-	    /**
+	    *//**
 	     * Transpose of the generator matrix, multiplied with a codeword to generate a syndrome.
-	     */
+	     *//*
 	    
 	    private static final int[] sCheck = {
 
@@ -94,15 +94,15 @@ public class Golay implements Decoder{
 
 	    };
 
-	    /**
+	    *//**
 	     * A 4096 (2^12) element array that maps datawords to codewords.
-	     */
+	     *//*
 	    
 	    private static final int[] sCodewords;
 	    
-	    /**
+	    *//**
 	     * A 4096 (2^12) element array that maps syndromes to error bits.
-	     */
+	     *//*
 	    
 	    private static final int[] sErrors;
 	    
@@ -112,11 +112,11 @@ public class Golay implements Decoder{
 	        sErrors = computeErrors();
 	    }
 
-	    /**
+	    *//**
 	     * Generates the codewords array.
 	     * 
 	     * @return an array for assignment to {@link sCodewords}
-	     */
+	     *//*
 	    
 	    private static int[] computeCodewords() {
 	        int[] cws = new int[4096];
@@ -135,11 +135,11 @@ public class Golay implements Decoder{
 	        return cws;
 	    }
 	    
-	    /**
+	    *//**
 	     * Generates error array.
 	     * 
 	     * @return an array for assignment to {@link sErrors}
-	     */
+	     *//*
 	    
 	    private static int[] computeErrors() {
 	        int[] errors = new int[4096];
@@ -184,25 +184,25 @@ public class Golay implements Decoder{
 	        return errors;
 	    }
 	    
-	    /**
+	    *//**
 	     * Encodes a 12 bit data word into a codeword. The 12 bits must be in the
 	     * least significant positions and all other supplied bits must be zero.
 	     * 
 	     * @param data a 12 bit data word
 	     * @return the 24 bit code word
-	     */
+	     *//*
 	    
 	    public static int encode(final int data) {
 	        return sCodewords[data];
 	    }
 	    
-	    /**
+	    *//**
 	     * Computes the syndrome for the supplied codeword. The 24 bits must be in
 	     * the least significant positions.
 	     * 
 	     * @param word a candidate code word
 	     * @return the syndrome for the supplied word
-	     */
+	     *//*
 	    
 	    public static int syndrome(final int word) {
 	        //multiply codeword by the check matrix
@@ -215,14 +215,14 @@ public class Golay implements Decoder{
 	        return syndrome;
 	    }
 
-	    /**
+	    *//**
 	     * Whether the supplied candidate code word is a valid code word. The 24
 	     * bits must be in the least significant positions and all other supplied
 	     * bits must be zero.
 	     * 
 	     * @param word the candidate code word
 	     * @return true iff the supplied word is a valid codeword
-	     */
+	     *//*
 	    
 	    public static boolean isCodeword(final int word) {
 	        //optimization - is it worth it?
@@ -231,24 +231,24 @@ public class Golay implements Decoder{
 	        return syndrome(word) == 0;
 	    }
 	    
-	    /**
+	    *//**
 	     * Decodes a valid code word into a dataword.
 	     * 
 	     * @param codeword a valid code word
 	     * @return the corresponding data word
-	     */
+	     *//*
 	    public static int decodeWord(final int codeword) {
 	        return (codeword >> 12) & MASK;
 	    }
 
-	    /**
+	    *//**
 	     * Attempts to correct and decode a codeword. The 24 bits must be in the
 	     * least significant positions and all other supplied bits must be zero.
 	     * NOTE: for codewords with four errors, this method does not attempt any correction
 	     * 
 	     * @param word a word to be decoded
 	     * @return a decoded and possibly corrected data word
-	     */
+	     *//*
 	    
 	    public static int correctAndDecode(final int word) {
 	        int err = sErrors[ syndrome(word) ];
@@ -258,9 +258,9 @@ public class Golay implements Decoder{
 	 
 	    // constructor
 	    
-	    /**
+	    *//**
 	     * Cannot be instantiated.
-	     */
+	     *//*
 	    
 	    public Golay() { }
 	    
@@ -336,3 +336,4 @@ public class Golay implements Decoder{
 
 	    
 }
+*/

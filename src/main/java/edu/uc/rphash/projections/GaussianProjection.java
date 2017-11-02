@@ -1,4 +1,4 @@
-package edu.uc.rphash.projections;
+/*package edu.uc.rphash.projections;
 
 import java.util.Random;
 
@@ -36,9 +36,9 @@ public class GaussianProjection implements Projector {
 		return projectGauss(s, M, n, t);
 	}
 
-	/*
+	
 	 * This is the basic naive random projection method
-	 */
+	 
 	float[] projectGauss(float[] v, float[] M, int n, int t) {
 		int i, j;
 		float[] r = new float[t];
@@ -52,10 +52,10 @@ public class GaussianProjection implements Projector {
 		return r;
 	}
 
-	/*
+	
 	 * Generate a 'good enough' gaussian random variate. based on central limit
 	 * thm , this is used if better than achipolis projection is needed
-	 */
+	 
 	float sampleNormal() {
 		int i;
 		float s = 0.0f;
@@ -73,3 +73,4 @@ public class GaussianProjection implements Projector {
 	}
 
 }
+*/

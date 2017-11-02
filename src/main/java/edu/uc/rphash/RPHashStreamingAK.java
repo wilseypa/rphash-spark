@@ -10,14 +10,13 @@ import edu.uc.rphash.Readers.SimpleArrayReader;
 import edu.uc.rphash.decoders.Decoder;
 import edu.uc.rphash.frequentItemSet.KHHCentroidCounterPush;
 import edu.uc.rphash.knee.LpointKnee;
-import edu.uc.rphash.knee.SimpleKnee;
 import edu.uc.rphash.lsh.LSH;
 import edu.uc.rphash.projections.DBFriendlyProjection;
 import edu.uc.rphash.projections.Projector;
 import edu.uc.rphash.standardhash.HashAlgorithm;
 import edu.uc.rphash.standardhash.MurmurHash;
 import edu.uc.rphash.tests.StatTests;
-import edu.uc.rphash.tests.clusterers.Kmeans;
+
 import edu.uc.rphash.tests.generators.ClusterGenerator;
 
 /**This is an adaptation of RPHash Streaming with support for 
@@ -30,7 +29,7 @@ public class RPHashStreamingAK implements StreamClusterer {
 	public KHHCentroidCounterPush is;
 	private LSH[] lshfuncs;
 	private StatTests vartracker;
-	private List<float[]> centroids = null;
+	private List<Centroid> centroids = null;
 	private RPHashObject so;
 
 
@@ -83,9 +82,9 @@ public class RPHashStreamingAK implements StreamClusterer {
 			Projector p = new DBFriendlyProjection(so.getdim(),
 					dec.getDimensionality(), r.nextLong());
 			List<float[]> noise = LSH.genNoiseTable(dec.getDimensionality(),
-					SimpleArrayReader.DEFAULT_NUM_BLUR, r, dec.getErrorRadius()
+					so.getNumBlur(), r, dec.getErrorRadius()
 							/ dec.getDimensionality());
-			lshfuncs[i] = new LSH(dec, p, hal, noise);
+			lshfuncs[i] = new LSH(dec, p, hal, noise,so.getNormalize());
 		}
 	}
 
@@ -102,7 +101,7 @@ public class RPHashStreamingAK implements StreamClusterer {
 
 
 	@Override
-	public List<float[]> getCentroids() {
+	public List<Centroid> getCentroids() {
 		if (centroids == null) {
 			init();
 			run();
@@ -111,16 +110,23 @@ public class RPHashStreamingAK implements StreamClusterer {
 		return centroids;
 	}
 
-	public List<float[]> getCentroidsOfflineStep() {
-		centroids = new ArrayList<float[]>();
-		List<Centroid> cents = is.getTop();
-		List<Float> counts = is.getCounts();
+	public List<Centroid> getCentroidsOfflineStep() {
+		
+		centroids = is.getTop();
+		
+		
+//		centroids = new ArrayList<Centroid>();
+//		List<Float> counts = is.getCounts();
+//
+//		for (int i = 0; i < cents.size(); i++) {
+//			centroids.add(cents.get(i).centroid());
+//		}
 
-		for (int i = 0; i < cents.size(); i++) {
-			centroids.add(cents.get(i).centroid());
-		}
-
-		centroids = new Kmeans(so.getk(), centroids, counts).getCentroids();
+		Clusterer offlineclusterer = so.getOfflineClusterer();
+		offlineclusterer.setWeights(so.getCounts());
+		offlineclusterer.setData(so.getCentroids());
+		offlineclusterer.setK(so.getk());
+		centroids = offlineclusterer.getCentroids();
 
 		return centroids;
 	}
@@ -141,6 +147,47 @@ public class RPHashStreamingAK implements StreamClusterer {
 	@Override
 	public RPHashObject getParam() {
 		return this.so;
+	}
+
+	@Override
+	public void setWeights(List<Float> counts) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void setRawData(List<float[]> data) {
+//		this.data = data;
+	}
+	
+	@Override
+	public void setData(List<Centroid> centroids) {
+		ArrayList<float[]> data = new ArrayList<float[]>(centroids.size());
+		for(Centroid c : centroids)data.add(c.centroid());
+		setRawData(data);	
+	}
+
+	@Override
+	public void setK(int getk) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void shutdown() {
+		// TODO Auto-generated method stub
+		
+	}
+	
+	@Override
+	public void reset(int randomseed) {
+		centroids = null;
+		so.setRandomSeed(randomseed);
+	}
+
+	@Override
+	public boolean setMultiRun(int runs) {
+		return false;
 	}
 
 }

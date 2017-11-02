@@ -11,11 +11,16 @@ import java.io.PipedInputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
 
+import edu.uc.rphash.Centroid;
+import edu.uc.rphash.Clusterer;
 import edu.uc.rphash.decoders.Decoder;
 import edu.uc.rphash.decoders.MultiDecoder;
+import edu.uc.rphash.projections.Projector;
 import edu.uc.rphash.tests.StatTests;
 
 public class StreamObject implements RPHashObject, Iterator<float[]> {
@@ -30,7 +35,7 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 	int dim;
 	int randomseed;
 	long hashmod;
-	List<float[]> centroids;
+	List<Centroid> centroids;
 	List<Long> topIDs;
 	int multiDim;
 	Decoder dec;
@@ -43,6 +48,7 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 
 	BufferedReader assin;
 	DataInputStream binin;
+	private Projector projector;
 
 	// input format
 	// per line
@@ -56,7 +62,7 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 		this.executor = executor;
 
 		this.dim = dim;
-		this.randomSeed = DEFAULT_NUM_RANDOM_SEED;
+		this.randomSeed = new Random().nextLong();
 		this.hashmod = DEFAULT_HASH_MODULUS;
 		this.decoderMultiplier = DEFAULT_NUM_DECODER_MULTIPLIER;
 		this.dec = new MultiDecoder(this.decoderMultiplier
@@ -66,11 +72,18 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 		this.numBlur = DEFAULT_NUM_BLUR;
 		this.k = k;
 		this.data = null;
-		this.centroids = new ArrayList<float[]>();
+		this.centroids = new ArrayList<Centroid>();
 		this.topIDs = new ArrayList<Long>();
+		this.dimparameter = DEFAULT_DIM_PARAMETER;
+		this.clusterer = DEFAULT_OFFLINE_CLUSTERER;
+		this.projector = DEFAULT_PROJECTOR;
 	}
 
 	boolean filereader = false;
+	private int dimparameter;
+	private List<Float> counts;
+	private Clusterer clusterer;
+	private boolean normalize;
 
 	public StreamObject(String f, int k, boolean raw) throws IOException {
 		this.f = f;
@@ -99,7 +112,7 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 			binin.readInt();
 			dim = binin.readInt();
 		}
-		this.randomSeed = DEFAULT_NUM_RANDOM_SEED;
+		this.randomSeed = new Random().nextLong();
 		this.hashmod = DEFAULT_HASH_MODULUS;
 		this.decoderMultiplier = DEFAULT_NUM_DECODER_MULTIPLIER;
 		this.dec = new MultiDecoder(this.decoderMultiplier
@@ -109,8 +122,11 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 		this.numBlur = DEFAULT_NUM_BLUR;
 		this.k = k;
 		this.data = null;
-		this.centroids = new ArrayList<float[]>();
+		this.centroids = new ArrayList<Centroid>();
 		this.topIDs = new ArrayList<Long>();
+		this.dimparameter = DEFAULT_DIM_PARAMETER;
+		this.clusterer = DEFAULT_OFFLINE_CLUSTERER;
+		this.projector = DEFAULT_PROJECTOR;
 		// dec = new MultiDecoder(
 		// getInnerDecoderMultiplier()*inner.getDimensionality(), inner);
 	}
@@ -147,12 +163,12 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 	}
 
 	@Override
-	public void addCentroid(float[] v) {
+	public void addCentroid(Centroid v) {
 		centroids.add(v);
 	}
 
 	@Override
-	public void setCentroids(List<float[]> l) {
+	public void setCentroids(List<Centroid> l) {
 		centroids = l;
 	}
 
@@ -177,7 +193,7 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 	}
 
 	@Override
-	public List<float[]> getCentroids() {
+	public List<Centroid> getCentroids() {
 		return centroids;
 	}
 
@@ -238,6 +254,7 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 		ret += ", Blur:" + numBlur;
 		ret += ", Projections:" + numProjections;
 		ret += ", Outer Decoder Multiplier:" + decoderMultiplier;
+		ret += ", Offline Clusterer:" + clusterer.getClass().getName();
 		return ret;
 	}
 
@@ -259,10 +276,7 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 	@Override
 	public boolean hasNext() {
 		try {
-			
-			boolean hasnext = inputStream.available() > 0;
-			if(!hasnext)inputStream.close();
-			return hasnext;
+			return inputStream.available() > 0;
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -287,11 +301,6 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 		return readFloat;
 	}
 
-	@Override
-	public void setVariance(List<float[]> data) {
-		dec.setVariance(StatTests.varianceSample(data, .01f));
-	}
-
 	public void setDecayRate(float parseFloat) {
 		this.decayrate = parseFloat;
 	}
@@ -309,8 +318,18 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 	public boolean getParallel() {
 		return parallel;
 	}
+
+	@Override
+	public void setDimparameter(int parseInt) {
+		this.dimparameter = parseInt;
+		
+	}
+
+	@Override
+	public int getDimparameter() {
+		return this.dimparameter;
+	}
 	
-	List<Float> counts;
 	@Override
 	public void setCounts(List<Float> counts) {
 
@@ -320,5 +339,69 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 	@Override
 	public List<Float> getCounts() {
 		return counts;
+	}
+	
+	@Override
+	public void setOfflineClusterer(Clusterer agglomerative3) {
+		this.clusterer = agglomerative3;
+	}
+	
+	@Override
+	public Clusterer getOfflineClusterer() {
+		return this.clusterer;
+	}
+
+	@Override
+	public List<float[]> getRawData() {
+		return this.data;
+	}
+
+//	@Override
+//	public void remove() {
+//		// TODO Auto-generated method stub
+//		
+//	}
+//
+//	@Override
+//	public void forEachRemaining(Consumer<? super float[]> action) {
+//		// TODO Auto-generated method stub
+//		
+//	}
+
+	@Override
+	public void setK(int getk) {
+		this.k = getk;
+		
+	}
+
+	@Override
+	public void setRawData(List<float[]> c) {
+		this.data = c;
+	}
+
+	@Override
+	public void addRawData(float[] centroid) {
+		if(data==null)data=new ArrayList<>();
+		data.add(centroid);
+	}
+	
+	@Override
+	public void setNormalize(boolean parseBoolean) {
+		this.normalize = parseBoolean;		
+	}
+	
+	public boolean getNormalize() {
+		return this.normalize;		
+	}
+
+	@Override
+	public void setProjectionType(Projector dbFriendlyProjection) {
+		this.projector = dbFriendlyProjection;
+		
+	}
+
+	@Override
+	public Projector getProjectionType() {
+		return this.projector;
 	}
 }
