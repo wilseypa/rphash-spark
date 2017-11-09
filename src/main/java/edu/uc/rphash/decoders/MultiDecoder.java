@@ -83,4 +83,10 @@ public class MultiDecoder implements Decoder {
 		
 	}
 
+@Override
+public void setVariance(Float parameterObject) {
+	innerDec.setVariance(parameterObject);
+	
+}
+
 }

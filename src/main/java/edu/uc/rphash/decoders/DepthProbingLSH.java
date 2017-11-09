@@ -103,4 +103,10 @@ public class DepthProbingLSH implements Decoder {
 		return true;
 	}
 
+	@Override
+	public void setVariance(Float parameterObject) {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

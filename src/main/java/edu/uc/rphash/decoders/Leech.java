@@ -1166,31 +1166,38 @@ public class Leech implements Decoder {
 	//
 	// }
 
-//	@Override
-//	public void setVariance(float[] parameterObject) {
-//		this.variance = parameterObject;
-//		float vartot = 0f;
-//		for(int i = 0 ; i<this.getDimensionality();i++)vartot+=this.variance[i];
-//		vartot/=(float)this.getDimensionality();
-//		radius = (DPT + CPT) * vartot;
-//		APT = (float) (this.APT * vartot);
-//		BPT = (float) (this.BPT * vartot);
-//		CPT = (float) (this.CPT * vartot);
-//		DPT = (float) (this.DPT * vartot);
-//
-//		float[][] evenAPts = { { APT, DPT }, { CPT, DPT }, { CPT, BPT },
-//				{ APT, BPT } };
-//		float[][] oddAPts = { { BPT, CPT }, { BPT, APT }, { DPT, APT },
-//				{ DPT, CPT } };
-//		float[][] evenBPts = { { BPT, DPT }, { DPT, DPT }, { DPT, BPT },
-//				{ BPT, BPT } };
-//		float[][] oddBPts = { { CPT, CPT }, { CPT, APT }, { APT, APT },
-//				{ APT, CPT } };
-//		this.evenAPts = evenAPts;
-//		this.oddAPts = oddAPts;
-//		this.evenBPts = evenBPts;
-//		this.oddBPts = oddBPts;
-//	}
+
+	public void setVariance(float[] parameterObject) {
+		this.variance = parameterObject;
+		float vartot = 0f;
+		for(int i = 0 ; i<this.getDimensionality();i++)vartot+=this.variance[i];
+		vartot/=(float)this.getDimensionality();
+		radius = (DPT + CPT) * vartot;
+		APT = (float) (this.APT * vartot);
+		BPT = (float) (this.BPT * vartot);
+		CPT = (float) (this.CPT * vartot);
+		DPT = (float) (this.DPT * vartot);
+
+		float[][] evenAPts = { { APT, DPT }, { CPT, DPT }, { CPT, BPT },
+				{ APT, BPT } };
+		float[][] oddAPts = { { BPT, CPT }, { BPT, APT }, { DPT, APT },
+				{ DPT, CPT } };
+		float[][] evenBPts = { { BPT, DPT }, { DPT, DPT }, { DPT, BPT },
+				{ BPT, BPT } };
+		float[][] oddBPts = { { CPT, CPT }, { CPT, APT }, { APT, APT },
+				{ APT, CPT } };
+		this.evenAPts = evenAPts;
+		this.oddAPts = oddAPts;
+		this.evenBPts = evenBPts;
+		this.oddBPts = oddBPts;
+	}
+	
+	
+	@Override
+	public void setVariance(Float parameterObject) {
+		// TODO Auto-generated method stub
+		
+	}	
 	
 	@Override
 	public boolean selfScaling() {
@@ -1202,6 +1209,7 @@ public class Leech implements Decoder {
 		// TODO Auto-generated method stub
 		
 	}
+
 	
 //	@Override
 //	public float[] getVariance(){

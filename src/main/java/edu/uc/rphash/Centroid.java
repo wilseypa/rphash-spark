@@ -40,6 +40,18 @@ public class Centroid implements Comparable<Centroid>, Serializable {
 		this.projectionID = projectionID;
 		ids.add(id);
 	}
+	
+	public Centroid(int dim, long id,int projectionID,Long long1) {
+		this.centroid = new float[dim];
+		this.dimensions = dim;
+		this.wcss = new float[dim];
+		this.count = 0;
+		this.id = id;
+		this.ids = new ConcurrentSkipListSet<Long>();
+		this.projectionID = projectionID;
+		ids.add(id);
+		this.count = long1;
+	}
 
 	public Centroid(float[] data, int projectionID) {
 		this.centroid = data;
@@ -90,6 +102,11 @@ public class Centroid implements Comparable<Centroid>, Serializable {
 		this.wcss = wcss;
 	}
 
+	
+	
+	
+	
+	
 	public float[] centroid() {
 		return centroid;
 	}
@@ -173,6 +190,7 @@ public class Centroid implements Comparable<Centroid>, Serializable {
 //		this.M2 = ret[2];
 	}
 
+	
 	public void updateVec(float[] data) 
 	{
 		float[][] ret = merge(this.count, this.centroid, this.wcss, 1, data);
@@ -192,7 +210,19 @@ public class Centroid implements Comparable<Centroid>, Serializable {
 //	}
 //	this.wcss = M2;//tmpsum / (float) count;
 	}
-
+	
+	public void updateVec(Centroid rp) {
+		ids.addAll(rp.ids);
+		float delta;
+		count= count+rp.count;
+		for (int i = 0; i < rp.centroid.length; i++) {
+			delta = rp.centroid[i] - rp.centroid[i];
+			centroid[i] = centroid[i] + (rp.count*delta) / (float)count;
+		}
+	}
+	
+	
+	
 	public float getCount() {
 		return count;
 	}

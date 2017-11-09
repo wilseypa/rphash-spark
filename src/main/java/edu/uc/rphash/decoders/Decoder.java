@@ -26,4 +26,8 @@ public interface Decoder {
 //	abstract float[] getVariance();
 //	abstract void setVariance(float[] parameterObject);
 	void setCounter(Countable counter);
+	
+	
+	abstract void setVariance(Float parameterObject);
+	
 }

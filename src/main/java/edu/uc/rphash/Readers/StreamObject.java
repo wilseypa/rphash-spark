@@ -404,4 +404,13 @@ public class StreamObject implements RPHashObject, Iterator<float[]> {
 	public Projector getProjectionType() {
 		return this.projector;
 	}
+	
+	@Override
+	public void setVariance(List<float[]> data) {
+		dec.setVariance(StatTests.varianceSample(data, .01f));
+	}
+
+	
+	
+	
 }

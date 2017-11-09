@@ -254,6 +254,14 @@ public class Spherical implements Decoder {
 //		variance = parameterObject;
 //	}
 //	
+	
+	@Override
+	public void setVariance(Float parameterObject) {
+		float variance = 1f;
+		 variance = parameterObject;
+	}
+
+	
 //	@Override
 //	public float[] getVariance(){
 //		return variance;
@@ -269,5 +277,7 @@ public class Spherical implements Decoder {
 		// TODO Auto-generated method stub
 		
 	}
+
+	
 
 }

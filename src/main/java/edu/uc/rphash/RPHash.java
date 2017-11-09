@@ -11,6 +11,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Arrays;
 
 //import org.rosuda.JRI.Rengine;
 import edu.uc.rphash.Readers.RPHashObject;
@@ -21,7 +22,7 @@ import edu.uc.rphash.decoders.DepthProbingLSH;
 //import edu.uc.rphash.decoders.E8;
 //import edu.uc.rphash.decoders.Golay;
 import edu.uc.rphash.decoders.Leech;
-import edu.uc.rphash.decoders.MultiDecoder;
+//import edu.uc.rphash.decoders.MultiDecoder;
 //import edu.uc.rphash.decoders.OriginDecoder;
 //import edu.uc.rphash.decoders.PsdLSH;
 import edu.uc.rphash.decoders.Spherical;
@@ -131,7 +132,9 @@ public class RPHash {
 
 		List<float[]> data = null;
 
-		String filename = args[0];
+		
+//		String filename = args[0];
+		final String filename =  "/var/rphash/data/data.mat";
 		int k = Integer.parseInt(args[1]);
 		String outputFile = args[2];
 
@@ -141,8 +144,77 @@ public class RPHash {
 		// Rengine re = Rengine.getMainEngine();
 		// if(re == null)
 		// re = new Rengine(new String[] {"--no-save"}, false, null);
+		
+		if (args.length == 3) {	
+			SparkConf conf = new SparkConf().setAppName("RPHashMultiProj_Spark");
+		
+			JavaSparkContext sc = new JavaSparkContext(conf);
+			
+			
+			//make a dummy list of integers for each compute node
+		    int slices =  3 ;//number of compute nodes
+		    int n = slices;
+		    List<Object> l = new ArrayList<>(n);
+		    for (int i = 0; i < n; i++) {
+		      l.add(i);
+		    }
 
-		if (args.length == 3) {
+		    JavaRDD<Object> dataSet = sc.parallelize(l);
+
+		    List<Long>[] topids = dataSet.map(new Function<Object, List<Long>[]>() 
+		    {
+				private static final long serialVersionUID = -7127935862696405148L;
+				
+				@Override
+			      public List<Long>[] call(Object integer) {
+			        return RPHashMultiProj.mapphase1(k,filename);
+			      }
+				
+		    }).reduce(new Function2<List<Long>[], List<Long>[], List<Long>[]>() {
+				private static final long serialVersionUID = 4294461355112957651L;
+				
+		
+				@Override
+				public List<Long>[] call(List<Long>[] topidsandcounts1, List<Long>[] topidsandcounts2) throws Exception {
+
+					return RPHashMultiProj.reducephase1(topidsandcounts1,topidsandcounts2);
+				}
+			    });	
+				
+				
+		    Object[] centroids = dataSet.map(new Function<Object, Object[]>() 
+    	    {
+				private static final long serialVersionUID = 1L;
+
+			@Override
+    	      public Object[] call(Object o) {
+    	        return RPHashMultiProj.mapphase2(topids,filename);
+    	      }
+    	    }).
+    	    reduce(new Function2<Object[], Object[], Object[]>() {
+
+			private static final long serialVersionUID = 1L;
+
+			@Override
+    		public Object[] call(Object[] cents1, Object[] cents2) throws Exception {
+    			return RPHashMultiProj.reducephase2(cents1,cents2);
+    		}
+    	    });
+		    
+		  
+		  //offline cluster
+		    VectorUtil.writeCentroidsToFile(new File(outputFile + ".mat"),new Agglomerative3((List)centroids[0], k).getCentroids(), false);
+
+//		    spark.stop();
+		    
+				
+		    }
+		    
+		}
+		
+			
+		
+/*		if (args.length == 3) {
 			data = VectorUtil.readFile(filename, raw);
 			RPHashSimple clusterer = new RPHashSimple(data, k);
 			VectorUtil.writeCentroidsToFile(new File(outputFile + "."
@@ -180,7 +252,7 @@ public class RPHash {
 		}
 
 	}
-
+*/
 	/**
 	 * Run the cluster and find the best clustering
 	 * 
@@ -557,13 +629,13 @@ public class RPHash {
 				so.setDecoderType(new Leech());
 				break;
 			}
-			case "multileech": {
-				o.setDecoderType(new MultiDecoder(
-						o.getInnerDecoderMultiplier() * 24, new Leech()));
-				so.setDecoderType(new MultiDecoder(so
-						.getInnerDecoderMultiplier() * 24, new Leech()));
-				break;
-			}
+//			case "multileech": {
+//				o.setDecoderType(new MultiDecoder(
+//						o.getInnerDecoderMultiplier() * 24, new Leech()));
+//				so.setDecoderType(new MultiDecoder(so
+//						.getInnerDecoderMultiplier() * 24, new Leech()));
+//				break;
+//			}
 /*			case "levypstable": {
 				o.setDecoderType(new PsdLSH(PsdLSH.LEVY, o.getDimparameter()));
 				so.setDecoderType(new PsdLSH(PsdLSH.LEVY, o.getDimparameter()));

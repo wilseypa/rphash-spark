@@ -1,4 +1,4 @@
-package edu.uc.rphash.decoders;
+/*package edu.uc.rphash.decoders;
 
 import java.util.HashSet;
 import java.util.Random;
@@ -10,12 +10,12 @@ public class LeechMulti implements Decoder {
 	public static int Dim = 24;
 	float radius;
 	float distance[] = {-1,-1,-1,-1};
-	/*
+	
 	 * an integer symbol encoding of an H6 encoder. 0 1 2 3 = 0 1 w w' indexes
 	 * of the array result in the H6 encoding of a 3 integer symbol character
 	 * equivalent word. eg: H6CodeWords[0][1][2] = [0,3,2]resulting in the
 	 * codeword : 0 1 w 0 w' w
-	 */
+	 
 	static char[][][][] H6CodeWords = { {// 0 0 1 w -w
 			{ { 0, 0, 0 }, { 1, 1, 1 }, { 2, 2, 2 }, { 3, 3, 3 } },// 0
 					{ { 1, 2, 3 }, { 0, 3, 2 }, { 3, 0, 1 }, { 2, 1, 0 } },// 1
@@ -61,9 +61,9 @@ public class LeechMulti implements Decoder {
 					{ { 2, 1, 0 }, { 1, 3, 1 }, { 3, 2, 2 }, { 0, 0, 3 } } // -w
 			} };
 
-	/*
+	
 	 * #define APT 1 #define BPT 3 #define CPT 5 #define DPT 7
-	 */
+	 
 
 	// shaping -.75, -.25,+.25,+.75
 	// the unit scaled points of 16QAM centered at the origin.
@@ -153,13 +153,13 @@ public class LeechMulti implements Decoder {
 		this.oddBPts = oddBPts;
 	}
 
-	/*
+	
 	 * WARNING: not true euclidean distance compute the distance between two 24
 	 * dimensional vectors. The square-root is omitted because the algorithm
 	 * only needs to know which is closer d(cp, pt.) or d(cp',pt) , for which
 	 * sqrt(d(cp, pt.)) and sqrt(d(cp', pt.)) inequality holds for positive
 	 * distances(this is why we keep the squares).
-	 */
+	 
 	// #define golay
 	float distance(float pt[], float cp[], int startat) {
 		return (cp[0] - pt[startat]) * (cp[0] - pt[startat])
@@ -213,7 +213,7 @@ public class LeechMulti implements Decoder {
 	// return point;
 	// }
 
-	/*
+	
 	 * this function returns all of the pertinent information from the decoder
 	 * such as minimum distances, nearest coset leader quadrant, and alternative
 	 * k-parity distances
@@ -225,7 +225,7 @@ public class LeechMulti implements Decoder {
 	 * and the -,+ of order pairs be used to tile the generalized 16bit qam,
 	 * besides this has to be done anyway so we can get out the real number
 	 * coordinates in the end
-	 */
+	 
 	int QAM(float[] r, float[][] evenPts, // [4][2],
 			float[][] oddPts, // [4][2],
 			float[][] dijs,// [12][4],
@@ -309,10 +309,10 @@ public class LeechMulti implements Decoder {
 		return 0;// ret;
 	}
 
-	/*
+	
 	 * computes the Z2 block confidence of the concatenated points projections
 	 * onto GF4 characters
-	 */
+	 
 	void blockConf(float[][] dijs,// [12][4],
 			float[][] muEs,// [6][4],
 			float[][] muOs,// [6][4],
@@ -476,11 +476,11 @@ public class LeechMulti implements Decoder {
 		}
 	}
 
-	/*
+	
 	 * here we are looking for the least character in the H6 hexacode word
 	 * returns the hexacode word and the wt, for using in locating the least
 	 * reliable symbol
-	 */
+	 
 	void constructHexWord(float[][] mus,// [6][4],
 			char[] chars,// [6],
 			float[] charwts// [6])
@@ -508,10 +508,10 @@ public class LeechMulti implements Decoder {
 
 	}
 
-	/*
+	
 	 * this is the minimization over the hexacode function using the 2nd
 	 * algorithm of amrani and be'ery ieee may '96
-	 */
+	 
 	float minH6(char[] y,// [6],
 			float[] charwts,// [6],
 			float[][] mus)// [6][4])
@@ -599,11 +599,11 @@ public class LeechMulti implements Decoder {
 		return minCodeWt;
 	}
 
-	/*
+	
 	 * here we are resolving the h-parity. which requires that the overall least
 	 * significant bit parities equal the bit parities of each projected GF4
 	 * block. aka column parity must equal 1st row parity
-	 */
+	 
 	float hparity(float weight, char[] hexword,// [6],
 			char[][][] prefReps,// [6][4][4],
 			float[][] dijs,// [12][4],
@@ -659,11 +659,11 @@ public class LeechMulti implements Decoder {
 		codeword[least + 2] = (char) (codeword[least + 2] ^ 1);
 		codeword[least + 3] = (char) (codeword[least + 3] ^ 1);
 
-		/*
+		
 		 * for(i=0;i<6;i++){ printf("%i%i%i%i ",
 		 * codeword[i*4],codeword[i*4+1],codeword[i*4+2],codeword[i*4+3]); }
 		 * printf(": [%i , %f]\n" , least,leastwt);
-		 */
+		 
 
 		return weight;
 	}
@@ -673,10 +673,10 @@ public class LeechMulti implements Decoder {
 			float[][] dijs,// [12][4],
 			char[][] kparities// [12][4])
 	) {
-		/*
+		
 		 * this last parity check assures that all A or B points have even/odd
 		 * parity
-		 */
+		 
 		char parity = 0;
 		char i = 0;
 		float least = 100000;
@@ -694,7 +694,7 @@ public class LeechMulti implements Decoder {
 			}
 		}
 
-		/* something here as this parity check doesnt fix anything */
+		 something here as this parity check doesnt fix anything 
 		// not sure why this doesnt at least double the set cardinality
 		if (parity == ABtype) {
 			return weight;
@@ -750,14 +750,14 @@ public class LeechMulti implements Decoder {
 		return (float) Math.sqrt(2 * (DPT + CPT));
 	}
 
-	/**
+	*//**
 	 * Generate the initial quantization vector for the lattice. ie
 	 * <1,0,1,1,1,0,1,1> is a valid E8 vector as is <8,0,-8,4,1,0,1,1>, there is
 	 * simply a quantization disparity. to fix this we simply solve the unscaled
 	 * version equation cX = 1X
 	 * 
 	 * @return
-	 */
+	 *//*
 	public byte[] generateQuantizationVector(float[] r) {
 
 		// TestUtil.prettyPrint(r);
@@ -1032,3 +1032,4 @@ public class LeechMulti implements Decoder {
 //	
 	
 }
+*/

@@ -8,7 +8,7 @@ import edu.uc.rphash.Clusterer;
 import edu.uc.rphash.decoders.Decoder;
 import edu.uc.rphash.decoders.DepthProbingLSH;
 import edu.uc.rphash.decoders.Leech;
-import edu.uc.rphash.decoders.MultiDecoder;
+//import edu.uc.rphash.decoders.MultiDecoder;
 import edu.uc.rphash.decoders.Spherical;
 import edu.uc.rphash.projections.DBFriendlyProjection;
 import edu.uc.rphash.projections.Projector;
@@ -88,7 +88,7 @@ public interface RPHashObject {
 	void setOfflineClusterer(Clusterer clusterer );   
 	Clusterer getOfflineClusterer();
 	
-	
+	void setVariance(List<float[]> data);
 	int getk();
 	void setK(int getk);
 	
