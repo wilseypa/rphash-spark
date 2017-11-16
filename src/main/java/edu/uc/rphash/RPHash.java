@@ -209,7 +209,74 @@ public class RPHash {
 		    
 				
 		    }
+		  
+/*		if (args.length == 3) {	
+			SparkConf conf = new SparkConf().setAppName("RPHashSimple_Spark");
+		
+			JavaSparkContext sc = new JavaSparkContext(conf);
+			
+			
+			//make a dummy list of integers for each compute node
+		    int slices =  3 ;//number of compute nodes
+		    int n = slices;
+		    List<Object> l = new ArrayList<>(n);
+		    for (int i = 0; i < n; i++) {
+		      l.add(i);
+		    }
+
+		    JavaRDD<Object> dataSet = sc.parallelize(l);
+
+		    List<Long>[] topids = dataSet.map(new Function<Object, List<Long>[]>() 
+		    {
+				private static final long serialVersionUID = -7127935862696405148L;
+				
+				@Override
+			      public List<Long>[] call(Object integer) {
+			        return RPHashSimple.mapphase1(k,filename);
+			      }
+				
+		    }).reduce(new Function2<List<Long>[], List<Long>[], List<Long>[]>() {
+				private static final long serialVersionUID = 4294461355112957651L;
+				
+		
+				@Override
+				public List<Long>[] call(List<Long>[] topidsandcounts1, List<Long>[] topidsandcounts2) throws Exception {
+
+					return RPHashSimple.reducephase1(topidsandcounts1,topidsandcounts2);
+				}
+			    });	
+				
+				
+		    Object[] centroids = dataSet.map(new Function<Object, Object[]>() 
+    	    {
+				private static final long serialVersionUID = 1L;
+
+			@Override
+    	      public Object[] call(Object o) {
+    	        return RPHashSimple.mapphase2(topids,filename);
+    	      }
+    	    }).
+    	    reduce(new Function2<Object[], Object[], Object[]>() {
+
+			private static final long serialVersionUID = 1L;
+
+			@Override
+    		public Object[] call(Object[] cents1, Object[] cents2) throws Exception {
+    			return RPHashSimple.reducephase2(cents1,cents2);
+    		}
+    	    });
 		    
+		  
+		  //offline cluster
+		    VectorUtil.writeCentroidsToFile(new File(outputFile + ".mat"),new Agglomerative3((List)centroids[0], k).getCentroids(), false);
+
+//		    spark.stop();
+		    
+				
+		    }	
+*/		
+		
+		
 		}
 		
 			
@@ -253,6 +320,16 @@ public class RPHash {
 
 	}
 */
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	/**
 	 * Run the cluster and find the best clustering
 	 * 
