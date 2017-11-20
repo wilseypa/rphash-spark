@@ -408,7 +408,7 @@ public class RPHashMultiProj implements Clusterer {
 	
 	private void run() throws IOException {
 		runs = 1;
-		String fs = "/var/rphash/data/data.mat";
+		String fs = "/work/deysn/rphash/data/data500.mat";
 		List<Long>[] l1 = mapphase1(so.getk(),fs);
 		List<Long>[] l2 = mapphase1(so.getk(),fs);
 		List<Long>[] lres = reducephase1(l1,l2);
@@ -423,7 +423,7 @@ public class RPHashMultiProj implements Clusterer {
 		
 		centroids = new Agglomerative3((List) cres[0],so.getk() ).getCentroids();
 		
-		System.out.println(StatTests.WCSSE((List)centroids, "/var/rphash/data/data.mat", false));
+		System.out.println(StatTests.WCSSE((List)centroids, "/work/deysn/rphash/data/data500.mat", false));
 	}	
 	
 	

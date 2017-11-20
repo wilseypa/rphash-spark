@@ -134,7 +134,7 @@ public class RPHash {
 
 		
 //		String filename = args[0];
-		final String filename =  "/var/rphash/data/data.mat";
+		final String filename =  "/work/deysn/rphash/data/data500.mat";
 		int k = Integer.parseInt(args[1]);
 		String outputFile = args[2];
 
@@ -145,14 +145,14 @@ public class RPHash {
 		// if(re == null)
 		// re = new Rengine(new String[] {"--no-save"}, false, null);
 		
-		if (args.length == 3) {	
+		/*if (args.length == 3) {	
 			SparkConf conf = new SparkConf().setAppName("RPHashMultiProj_Spark");
 		
 			JavaSparkContext sc = new JavaSparkContext(conf);
 			
 			
 			//make a dummy list of integers for each compute node
-		    int slices =  3 ;//number of compute nodes
+		    int slices =  3 ;           //number of compute nodes
 		    int n = slices;
 		    List<Object> l = new ArrayList<>(n);
 		    for (int i = 0; i < n; i++) {
@@ -208,9 +208,9 @@ public class RPHash {
 //		    spark.stop();
 		    
 				
-		    }
+		    }*/
 		  
-/*		if (args.length == 3) {	
+		if (args.length == 3) {	
 			SparkConf conf = new SparkConf().setAppName("RPHashSimple_Spark");
 		
 			JavaSparkContext sc = new JavaSparkContext(conf);
@@ -253,7 +253,7 @@ public class RPHash {
 
 			@Override
     	      public Object[] call(Object o) {
-    	        return RPHashSimple.mapphase2(topids,filename);
+    	        return RPHashSimple.mapphase2(topids,filename);            
     	      }
     	    }).
     	    reduce(new Function2<Object[], Object[], Object[]>() {
@@ -274,7 +274,7 @@ public class RPHash {
 		    
 				
 		    }	
-*/		
+		
 		
 		
 		}

@@ -21,7 +21,7 @@ import edu.uc.rphash.tests.clusterers.DBScan;
 
 
 public interface RPHashObject {
-	final static int DEFAULT_NUM_PROJECTIONS = 2;
+	final static int DEFAULT_NUM_PROJECTIONS = 1;
 	public final static int DEFAULT_NUM_BLUR = 1;
 	final static long DEFAULT_NUM_RANDOM_SEED = 38006359550206753L;
 	final static int DEFAULT_NUM_DECODER_MULTIPLIER = 1;

@@ -145,11 +145,18 @@ public class RPHashSimple implements Clusterer {
 		Decoder dec = so.getDecoderType();
 		dec.setCounter(is);
 
-		Projector p = so.getProjectionType();
-		p.setOrigDim(so.getdim());
+		/*Projector p = so.getProjectionType();	
+		int orgdim = so.getdim();	
+		p.setOrigDim(orgdim);         // getting error on spark		
+		//p.setOrigDim(so.getdim());
 		p.setProjectedDim(dec.getDimensionality());
 		p.setRandomSeed(so.getRandomSeed());
-		p.init();
+		p.init();*/
+		
+		Random r = new Random(so.getRandomSeed());
+		Projector p = new DBFriendlyProjection(so.getdim(),
+				dec.getDimensionality(), r.nextLong());
+		
 		// no noise to start with
 		List<float[]> noise = LSH.genNoiseTable(
 				dec.getDimensionality(),
@@ -337,11 +344,15 @@ public class RPHashSimple implements Clusterer {
 		HashAlgorithm hal = new NoHash(so.getHashmod());
 		Decoder dec = so.getDecoderType();
 
-		Projector p = so.getProjectionType();
+/*		Projector p = so.getProjectionType();
 		p.setOrigDim(so.getdim());
 		p.setProjectedDim(dec.getDimensionality());
 		p.setRandomSeed(so.getRandomSeed());
 		p.init();
+		*/
+		Random r = new Random(so.getRandomSeed());
+		Projector p = new DBFriendlyProjection(so.getdim(),
+				dec.getDimensionality(), r.nextLong());
 		
 		List<float[]> noise = LSH.genNoiseTable(so.getdim(), so.getNumBlur(),
 				new Random(so.getRandomSeed()), (float)(dec.getErrorRadius())
@@ -349,7 +360,6 @@ public class RPHashSimple implements Clusterer {
 		
 		LSH lshfunc = new LSH(dec, p, hal, noise, so.getNormalize());
 	
-		long[] hash ;
 
 		// make a set of k default centroid objects
 		List<Centroid> centroids = new ArrayList<Centroid>();
@@ -359,20 +369,22 @@ public class RPHashSimple implements Clusterer {
 					-1, frequentItems[1].get(i)));
 		}
 
-while (vecs.hasNext()) {
+		long[] hash ;
+		
+     while (vecs.hasNext()) {
 			
-
 				hash = lshfunc.lshHashRadius(vec, noise);
-				for (Centroid cent : centroids) {
-					for (long hh : hash) {
-						if (cent.ids.contains(hh)) {
+//				labels.add(-1l);
+				for (Centroid cent : centroids) {              
+					for (long h : hash) {
+						if (cent.ids.contains(h)) {
 							cent.updateVec(vec);
-							cent.addID(hh);
+							cent.addID(h);
 						}
 					}
-	
-			vec = vecs.next();
-		     }
+				 }
+			 vec = vecs.next();                          
+		                                                   
         }
 		
          List<float[]> centvectors = new ArrayList<float[]>();
@@ -517,7 +529,7 @@ while (vecs.hasNext()) {
 
 	private void run() throws IOException {
 	
-		String fs = "/var/rphash/data/data.mat";
+		String fs = "/work/deysn/rphash/data/data500.mat";
 		List<Long>[] l1 = mapphase1(so.getk(),fs);
 		List<Long>[] l2 = mapphase1(so.getk(),fs);
 		List<Long>[] lres = reducephase1(l1,l2);
@@ -532,7 +544,7 @@ while (vecs.hasNext()) {
 		
 		centroids = new Agglomerative3((List) cres[0],so.getk() ).getCentroids();
 		
-		System.out.println(StatTests.WCSSE((List)centroids, "/var/rphash/data/data.mat", false)); // why?
+//		System.out.println(StatTests.WCSSE((List)centroids, "/var/rphash/data/data.mat", false)); // why? is this needed?
 	}	
 	
 	public static void main(String[] args) {
