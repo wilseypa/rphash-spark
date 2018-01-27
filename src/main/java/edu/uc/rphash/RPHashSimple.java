@@ -161,7 +161,9 @@ public class RPHashSimple implements Clusterer {
 		List<float[]> noise = LSH.genNoiseTable(
 				dec.getDimensionality(),
 				so.getNumBlur(),
-				new Random(),
+				
+		//		new Random(),     // replaced with r
+				r,
 				dec.getErrorRadius()
 						/ (dec.getDimensionality() * dec.getDimensionality()));
 
@@ -187,7 +189,7 @@ public class RPHashSimple implements Clusterer {
 
 		//		return so;
 		
-		return new List[] { is.getTop(), is.getCounts() };
+		return new List[] { is.getTop(), is.getCounts() };      //// WHAT IS THE TOP VALUES ?
 	}
 	
 	
@@ -352,10 +354,13 @@ public class RPHashSimple implements Clusterer {
 		*/
 		Random r = new Random(so.getRandomSeed());
 		Projector p = new DBFriendlyProjection(so.getdim(),
-				dec.getDimensionality(), r.nextLong());
+				dec.getDimensionality(), r.nextLong());                                 // r.nextLong produces same number as in phase1 ?
 		
 		List<float[]> noise = LSH.genNoiseTable(so.getdim(), so.getNumBlur(),
-				new Random(so.getRandomSeed()), (float)(dec.getErrorRadius())
+				
+				//new Random(so.getRandomSeed()), (float)(dec.getErrorRadius())       // fixed to r
+				
+				r, (float)(dec.getErrorRadius())
 						/ (float)(dec.getDimensionality() * dec.getDimensionality()));
 		
 		LSH lshfunc = new LSH(dec, p, hal, noise, so.getNormalize());
@@ -366,7 +371,7 @@ public class RPHashSimple implements Clusterer {
 
 		for (int i = 0; i < frequentItems[0].size(); i++) {
 			centroids.add(new Centroid(so.getdim(), frequentItems[0].get(i),
-					-1, frequentItems[1].get(i)));
+					-1, frequentItems[1].get(i)));                                // WHY THE PROJECTIONID IS -1 ?
 		}
 
 		long[] hash ;
@@ -445,8 +450,15 @@ public class RPHashSimple implements Clusterer {
 			for(Long id: vec.ids)
 			{
 				if(idsToIdx.containsKey(id))
+		
 				{
-					cents1.get(idsToIdx.get(id)).updateVec(vec);
+			
+					//  cents1.get(idsToIdx.get(id)).updateVec(vec);        // modify updateVec to weighted..
+					
+					//   cents1.get(idsToIdx.get(id)).mergeCentroids(vec);   // tried this but got bad reults.
+					
+				    	 cents1.get(idsToIdx.get(id)).mergecentsspark(vec);  // same result as mergeCentroids(vec).
+					
 					matchnotfound = false;
 				}
 			}

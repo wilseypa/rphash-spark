@@ -161,6 +161,13 @@ public class RPHashAdaptive2Pass implements Clusterer, Runnable {
 			}
 		}
 		
+		
+		// Here we have to write the code for merging the HashMap IDAndCent
+		// break the finddensitymode func. into two : 1 returns the merged hashmap idandcent in map-reduce paradigm
+		// 2 returns the list float of centroids computed in a single node.
+		
+		
+		
 		// next we want to prune the tree by parent count comparison
 		// follows breadthfirst search
 		HashMap<Long, Long> denseSetOfIDandCount = new HashMap<Long, Long>();

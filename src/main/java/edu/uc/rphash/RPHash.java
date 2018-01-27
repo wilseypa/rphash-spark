@@ -217,7 +217,7 @@ public class RPHash {
 			
 			
 			//make a dummy list of integers for each compute node
-		    int slices =  3 ;//number of compute nodes
+		    int slices =  3 ;                                              //number of compute nodes or machines
 		    int n = slices;
 		    List<Object> l = new ArrayList<>(n);
 		    for (int i = 0; i < n; i++) {
@@ -226,7 +226,7 @@ public class RPHash {
 
 		    JavaRDD<Object> dataSet = sc.parallelize(l);
 
-		    List<Long>[] topids = dataSet.map(new Function<Object, List<Long>[]>() 
+		    List<Long>[] topids = dataSet.map(new Function<Object, List<Long>[]>()   // this pass returns the merged topids list
 		    {
 				private static final long serialVersionUID = -7127935862696405148L;
 				
@@ -246,14 +246,15 @@ public class RPHash {
 				}
 			    });	
 				
-				
-		    Object[] centroids = dataSet.map(new Function<Object, Object[]>() 
+	// now we need to propagate the list of topids to all machines . how ? should we explicitly do it through the rdd ?
+		    
+		    Object[] centroids = dataSet.map(new Function<Object, Object[]>()      // this returns the merged list of centroids
     	    {
 				private static final long serialVersionUID = 1L;
 
 			@Override
     	      public Object[] call(Object o) {
-    	        return RPHashSimple.mapphase2(topids,filename);            
+    	        return RPHashSimple.mapphase2(topids,filename);                   // does this propagate the topids to all machines ?
     	      }
     	    }).
     	    reduce(new Function2<Object[], Object[], Object[]>() {

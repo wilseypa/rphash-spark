@@ -41,6 +41,8 @@ public class Centroid implements Comparable<Centroid>, Serializable {
 		ids.add(id);
 	}
 	
+	// thid Centroid is getting called from RPHashSimple Spark
+	
 	public Centroid(int dim, long id,int projectionID,Long long1) {
 		this.centroid = new float[dim];
 		this.dimensions = dim;
@@ -211,12 +213,24 @@ public class Centroid implements Comparable<Centroid>, Serializable {
 //	this.wcss = M2;//tmpsum / (float) count;
 	}
 	
-	public void updateVec(Centroid rp) {
-		ids.addAll(rp.ids);
+	public void updateVec(Centroid rp) {                          // this was initially used to merge centroids for spark
+		ids.addAll(rp.ids);											// WHY?
 		float delta;
 		count= count+rp.count;
 		for (int i = 0; i < rp.centroid.length; i++) {
-			delta = rp.centroid[i] - rp.centroid[i];
+			delta = rp.centroid[i] - rp.centroid[i];				// this is zero , is it right ??
+			centroid[i] = centroid[i] + (rp.count*delta) / (float)count;
+		}
+	}
+
+	
+	public void mergecentsspark(Centroid rp) {                       // this I tried now used to merge centroids for spark
+		ids.addAll(rp.ids);											
+		float delta;
+		count= this.count+rp.count;
+		for (int i = 0; i < rp.centroid.length; i++) {
+		  //delta = rp.centroid[i] - rp.centroid[i];
+			delta = rp.centroid[i] - this.centroid[i];
 			centroid[i] = centroid[i] + (rp.count*delta) / (float)count;
 		}
 	}
