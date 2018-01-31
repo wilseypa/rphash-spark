@@ -164,8 +164,8 @@ public class RPHashSimple implements Clusterer {
 				
 		//		new Random(),     // replaced with r
 				r,
-				dec.getErrorRadius()
-						/ (dec.getDimensionality() * dec.getDimensionality()));
+				(float)dec.getErrorRadius()
+						/ (float)(dec.getDimensionality() * dec.getDimensionality()));
 
 		LSH lshfunc = new LSH(dec, p, hal, noise, so.getNormalize());
 
@@ -354,7 +354,7 @@ public class RPHashSimple implements Clusterer {
 		*/
 		Random r = new Random(so.getRandomSeed());
 		Projector p = new DBFriendlyProjection(so.getdim(),
-				dec.getDimensionality(), r.nextLong());                                 // r.nextLong produces same number as in phase1 ?
+				dec.getDimensionality(), r.nextLong());                                 // r.nextLong produces same number as in phase1 .
 		
 		List<float[]> noise = LSH.genNoiseTable(so.getdim(), so.getNumBlur(),
 				
@@ -422,9 +422,8 @@ public class RPHashSimple implements Clusterer {
 		HashMap<Long,Integer> idsToIdx = new HashMap<>();
 		for (int i = 0;i<((List)in1[0]).size();i++) 
 		{
-			
+						
 			Centroid vec = new Centroid((float[])((List)in1[0]).get(i),-1);
-
 			vec.ids = (ConcurrentSkipListSet<Long>) ((List)in1[1]).get(i);
 			vec.id = vec.ids.first();
 			vec.setCount((long)((List)in1[2]).get(i));
@@ -471,7 +470,9 @@ public class RPHashSimple implements Clusterer {
 		List<ConcurrentSkipListSet<Long>> retids = new ArrayList<ConcurrentSkipListSet<Long>>();
 		List<Long> retcount = new ArrayList<Long>();
 
-		for(Centroid c : cents1.subList(0, Math.min(k,cents1.size()))){
+//		for(Centroid c : cents1.subList(0, Math.min(k,cents1.size()))){
+			
+		for(Centroid c : cents1.subList(0, cents1.size())){	                      // have to try
 			retcents.add(c.centroid());
 			retcount.add((long) c.getCount());
 			retids.add(c.ids);

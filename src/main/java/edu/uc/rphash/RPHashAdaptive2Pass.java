@@ -107,7 +107,7 @@ public class RPHashAdaptive2Pass implements Clusterer, Runnable {
 //			rngvec[i] += delta/(float)counter;
 //		}
 		
-		hashvec(xt,x,IDAndCent, IDandID,ct);
+		hashvec(xt,x,IDAndCent, IDandID,ct);                   // returns a long ?.
 	}
 	
 	void addtocounter(float[] x, Projector p,
@@ -128,18 +128,24 @@ public class RPHashAdaptive2Pass implements Clusterer, Runnable {
 		return (num & -num) == num;
 	}
 
+	
+	
+	
 	/*
 	 * X - data set k - canonical k in k-means l - clustering sub-space Compute
 	 * density mode via iterative deepening hash counting
 	 */
-	public List<List<float[]>> findDensityModes() {
+//	public List<List<float[]>> findDensityModes() {
+		
+		public HashMap<Long, List<float[]>>  findDensityModesPart1() {
 		HashMap<Long, List<float[]>> IDAndCent = new HashMap<>();
-		HashMap<Long, List<Integer>> IDAndID = new HashMap<>();
+		HashMap<Long, List<Integer>> IDAndID = new HashMap<>();          // why is this needed ?
 		// #create projector matrixs
 		Projector projector = so.getProjectionType();
 		projector.setOrigDim(so.getdim());
 		projector.setProjectedDim(so.getDimparameter());
-		projector.setRandomSeed(so.getRandomSeed());
+		//projector.setRandomSeed(so.getRandomSeed());
+		projector.setRandomSeed(12345678910L);
 		projector.init();
 		
 		int ct = 0;
@@ -162,14 +168,52 @@ public class RPHashAdaptive2Pass implements Clusterer, Runnable {
 		}
 		
 		
+		
+		return IDAndCent; }     // should it return new Object[] { IDAndCent, IDAndID } both ?
+		
+	
+		
+		
 		// Here we have to write the code for merging the HashMap IDAndCent
 		// break the finddensitymode func. into two : 1 returns the merged hashmap idandcent in map-reduce paradigm
 		// 2 returns the list float of centroids computed in a single node.
 		
+			
+		
+		
+	public static HashMap<Long, List<float[]>> mergehmapsidsandcents(HashMap<Long, List<float[]>> partidandcent1,
+				HashMap<Long, List<float[]>> partidandcent2) 
+	{
+			
+	
+			{    // method to test 1.
+				HashMap<Long, List<float[]>> combined  = new HashMap<Long, List<float[]>> (); // new empty map
+				combined.putAll(partidandcent1);
+
+				for(Long key : partidandcent2.keySet()) {
+				    if(combined.containsKey(key)) {
+				    	combined.get(key).addAll(partidandcent2.get(key));
+				    } else {
+				    	combined.put(key,partidandcent2.get(key));
+				    }
+				}
+		
+				return (combined);	
+			}
+								
+	
+			
+	}
+		
+	
 		
 		
 		// next we want to prune the tree by parent count comparison
 		// follows breadthfirst search
+		
+				
+		
+		public List<List<float[]>>  findDensityModesPart2(HashMap<Long, List<float[]>> IDAndCent) {
 		HashMap<Long, Long> denseSetOfIDandCount = new HashMap<Long, Long>();
 		for (Long cur_id : new TreeSet<Long>(IDAndCent.keySet())) 
 		{
@@ -222,17 +266,23 @@ public class RPHashAdaptive2Pass implements Clusterer, Runnable {
 		
 		
 		
-		return new ArrayList<>(estcents.values());
-	}
+		return new ArrayList<>(estcents.values());}
+//	}
 
 	public void run() {
 		rngvec = new float[so.getDimparameter()];
 		counter = 0;
-		Random r = new Random(so.getRandomSeed());
+	//	Random r = new Random(so.getRandomSeed());
+		Random r = new Random(123456789L);
 		for (int i = 0; i < so.getDimparameter(); i++)
 			rngvec[i] = (float) r.nextGaussian();
 		
-		List<List<float[]>> clustermembers = findDensityModes();
+		HashMap<Long, List<float[]>> centsandids1 = findDensityModesPart1();
+		HashMap<Long, List<float[]>> centsandids2 = findDensityModesPart1();
+		HashMap<Long, List<float[]>> centsandids  =  mergehmapsidsandcents(centsandids1,centsandids2);
+		
+		List<List<float[]>> clustermembers = findDensityModesPart2(centsandids);
+		
 		List<float[]>centroids = new ArrayList<>();
 		
 		List<Float> weights =new ArrayList<>();
@@ -268,7 +318,7 @@ public class RPHashAdaptive2Pass implements Clusterer, Runnable {
 				// gen.writeCSVToFile(new
 				// File("/home/lee/Desktop/reclsh/in.csv"));
 				RPHashObject o = new SimpleArrayReader(gen.data, k);
-				o.setDimparameter(32);
+				o.setDimparameter(32);                                           // does this overwrites the default cmd line argument ?
 				RPHashAdaptive2Pass rphit = new RPHashAdaptive2Pass(o);
 				long startTime = System.nanoTime();
 				List<Centroid> centsr = rphit.getCentroids();
