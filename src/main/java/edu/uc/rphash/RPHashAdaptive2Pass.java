@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -12,6 +13,8 @@ import java.util.stream.Stream;
 
 import edu.uc.rphash.Readers.RPHashObject;
 import edu.uc.rphash.Readers.SimpleArrayReader;
+import edu.uc.rphash.Readers.StreamObject;
+import edu.uc.rphash.projections.DBFriendlyProjection;
 import edu.uc.rphash.projections.Projector;
 import edu.uc.rphash.tests.StatTests;
 import edu.uc.rphash.tests.clusterers.Agglomerative3;
@@ -20,11 +23,11 @@ import edu.uc.rphash.tests.generators.GenerateData;
 
 public class RPHashAdaptive2Pass implements Clusterer, Runnable {
 
-	boolean znorm = true;
+//	static boolean znorm = true;              // should this be static ??
+	static boolean znorm = false; 
 	
-	
-	private int counter;
-	private float[] rngvec;
+	private int counter;                       // what is the need for this?
+	private static float[] rngvec;             // should this be static ??
 	private List<Centroid> centroids = null;
 	private RPHashObject so;
 
@@ -67,12 +70,15 @@ public class RPHashAdaptive2Pass implements Clusterer, Runnable {
 	/*
 	 * super simple hash algorithm, reminiscient of pstable lsh
 	 */
-	public long hashvec(float[] xt, float[] x,
+	
+	
+	
+	public static  long hashvec(float[] xt, float[] x,                                 // should this be static ??
 			HashMap<Long, List<float[]>> IDAndCent, HashMap<Long, List<Integer>> IDAndLabel,int ct) {
 		long s = 1;//fixes leading 0's bug
 		for (int i = 0; i < xt.length; i++) {
 			s <<= 1;
-			if (xt[i] > rngvec[i])
+			if (xt[i] > rngvec[i])                                // err
 				s += 1;
 			if (IDAndCent.containsKey(s)) {
 				IDAndLabel.get(s).add(ct);
@@ -97,7 +103,7 @@ public class RPHashAdaptive2Pass implements Clusterer, Runnable {
 	 * hash the projected vector x and update the hash to centroid and counts
 	 * maps
 	 */
-	void addtocounter(float[] x, Projector p,
+	static void addtocounter(float[] x, Projector p,                                                    // should this be static ??
 			HashMap<Long, List<float[]>> IDAndCent,HashMap<Long, List<Integer>> IDandID,int ct) {
 		float[] xt = p.project(x);
 		
@@ -107,10 +113,10 @@ public class RPHashAdaptive2Pass implements Clusterer, Runnable {
 //			rngvec[i] += delta/(float)counter;
 //		}
 		
-		hashvec(xt,x,IDAndCent, IDandID,ct);                   // returns a long ?.
+		 hashvec(xt,x,IDAndCent, IDandID,ct);                   // returns a long ?.              //err
 	}
 	
-	void addtocounter(float[] x, Projector p,
+	static void addtocounter(float[] x, Projector p,													// should this be static ??
 			HashMap<Long, List<float[]>> IDAndCent,HashMap<Long, List<Integer>> IDandID,int ct,float[] mean,float[] variance)
 	{
 		float[] xt = p.project(StatTests.znormvec(x, mean, variance));
@@ -135,22 +141,53 @@ public class RPHashAdaptive2Pass implements Clusterer, Runnable {
 	 * X - data set k - canonical k in k-means l - clustering sub-space Compute
 	 * density mode via iterative deepening hash counting
 	 */
-//	public List<List<float[]>> findDensityModes() {
+
+	
 		
-		public HashMap<Long, List<float[]>>  findDensityModesPart1() {
+		public static HashMap<Long, List<float[]>>  findDensityModesPart_1(int k,String inputfile ) {
 		HashMap<Long, List<float[]>> IDAndCent = new HashMap<>();
 		HashMap<Long, List<Integer>> IDAndID = new HashMap<>();          // why is this needed ?
+		
+		SimpleArrayReader so = new SimpleArrayReader(null, k,
+				RPHashObject.DEFAULT_NUM_BLUR);
+		Iterator<float[]> vecs;
+		try {
+			vecs = new StreamObject(inputfile, 0, false)
+					.getVectorIterator();
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.err
+					.println("file not accessible or not found on cluster node!");
+			return null;
+		}
+		
+		float[] vec = vecs.next();                            // need this ?
+		
+		
+		rngvec = new float[32];
+		int counter = 0;
+	//	Random r = new Random(so.getRandomSeed());
+		Random r = new Random(123456789L);
+		for (int i = 0; i < so.getDimparameter(); i++)
+			rngvec[i] = (float) r.nextGaussian();
+		
+		so.setdim(vec.length);
+	//	so.getDecoderType().setVariance(StatTests.variance(vec));
+		
 		// #create projector matrixs
-		Projector projector = so.getProjectionType();
-		projector.setOrigDim(so.getdim());
-		projector.setProjectedDim(so.getDimparameter());
+		Projector projector = new DBFriendlyProjection();
+		projector.setOrigDim(so.getdim());                      // is this working for spark ?
+		projector.setProjectedDim(32);
 		//projector.setRandomSeed(so.getRandomSeed());
 		projector.setRandomSeed(12345678910L);
 		projector.init();
 		
 		int ct = 0;
 		if(znorm == true){
+			
 			float[] variance = StatTests.varianceCol(so.getRawData());
+			
+			
 			float[] mean = StatTests.meanCols(so.getRawData());
 			// #process data by adding to the counter
 			for (float[] x : so.getRawData()) 
@@ -161,17 +198,64 @@ public class RPHashAdaptive2Pass implements Clusterer, Runnable {
 		else
 		{
 			
-			for (float[] x : so.getRawData()) 
-			{
-				addtocounter(x, projector, IDAndCent, IDAndID,ct++);
+//			for (float[] x : so.getRawData()) 
+//			{
+//				addtocounter(x, projector, IDAndCent, IDAndID,ct++);
+//		
+			while (vecs.hasNext()) {
+				float[] record =  vecs.next();
+				
+	             addtocounter(record, projector, IDAndCent,IDAndID,ct++);            //err
+				
+				vec = vecs.next();
+			                       }
+			
+			
+			
 			}
-		}
+		
 		
 		
 		
 		return IDAndCent; }     // should it return new Object[] { IDAndCent, IDAndID } both ?
 		
 	
+		public HashMap<Long, List<float[]>>  findDensityModesPart1() {
+			HashMap<Long, List<float[]>> IDAndCent = new HashMap<>();
+			HashMap<Long, List<Integer>> IDAndID = new HashMap<>();          // why is this needed ?
+			// #create projector matrixs
+			Projector projector = so.getProjectionType();
+			projector.setOrigDim(so.getdim());
+			projector.setProjectedDim(so.getDimparameter());
+			//projector.setRandomSeed(so.getRandomSeed());
+			projector.setRandomSeed(12345678910L);
+			projector.init();
+			
+			int ct = 0;
+			if(znorm == true){
+				float[] variance = StatTests.varianceCol(so.getRawData());
+				float[] mean = StatTests.meanCols(so.getRawData());
+				// #process data by adding to the counter
+				for (float[] x : so.getRawData()) 
+				{
+					addtocounter(x, projector, IDAndCent,IDAndID,ct++,mean,variance);
+				}
+			}
+			else
+			{
+				
+				for (float[] x : so.getRawData()) 
+				{
+					addtocounter(x, projector, IDAndCent, IDAndID,ct++);
+				}
+			}
+			
+			
+			
+			return IDAndCent; }     // should it return new Object[] { IDAndCent, IDAndID } both ?	
+		
+		
+		
 		
 		
 		// Here we have to write the code for merging the HashMap IDAndCent

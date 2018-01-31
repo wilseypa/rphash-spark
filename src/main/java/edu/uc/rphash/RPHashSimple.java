@@ -125,7 +125,7 @@ public class RPHashSimple implements Clusterer {
 		
 		float[] vec = vecs.next();
 		so.setdim(vec.length);
-		so.getDecoderType().setVariance(StatTests.variance(vec));
+		so.getDecoderType().setVariance(StatTests.variance(vec));                              // why is this needed ?
 
 	//	long[] hash;
 		long hash;
