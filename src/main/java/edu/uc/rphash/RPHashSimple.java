@@ -108,7 +108,7 @@ public class RPHashSimple implements Clusterer {
 	}
 */
 	
-	public static List<Long>[] mapphase1(int k,String inputfile) {
+	public static List<Long>[] mapphase1(int k,String inputfile , int logN) {
 
 		SimpleArrayReader so = new SimpleArrayReader(null, k,
 				RPHashObject.DEFAULT_NUM_BLUR);
@@ -139,8 +139,9 @@ public class RPHashSimple implements Clusterer {
 //		if (!vecs.hasNext())
 //			return so;
 
-		int logk = (int) (.5 + Math.log(so.getk()) / Math.log(2));// log k and round to integer																																
-		int k1 = so.getk() * logk;
+		int logk = (int) (.5 + Math.log(so.getk()) / Math.log(2));            // log k and round to integer																																
+		int k1 = so.getk() * logk*logN;
+		
 		ItemSet<Long>is = new SimpleFrequentItemSet<Long>(k1);
 		Decoder dec = so.getDecoderType();
 		dec.setCounter(is);
@@ -260,11 +261,11 @@ public class RPHashSimple implements Clusterer {
 	*/
 	
 	public static List<Long>[] reducephase1(List<Long>[] topidsandcounts1,
-			List<Long>[] topidsandcounts2) {
+			List<Long>[] topidsandcounts2, int logN) {
 		if(topidsandcounts1==null )return topidsandcounts2;
 		if(topidsandcounts2==null )return topidsandcounts1;
 		int k = Math.max(topidsandcounts1[0].size(), topidsandcounts2[0].size());
-		k =(int) (k *Math.log(k)+.5);
+		k =(int) (k *Math.log(k)+.5)*logN;
 		// merge lists
 		HashMap<Long, Long> idsandcounts = new HashMap<Long, Long>();
 		for (int i = 0; i < topidsandcounts1[0].size(); i++) {
@@ -412,9 +413,11 @@ public class RPHashSimple implements Clusterer {
 	
 	
 	public static Object[] reducephase2(Object[] in1,
-			Object[] in2) {
+			Object[] in2, int logN) {
 		
 		int k = Math.max(((List)in1[0]).size(),((List) in2[0]).size());
+		
+	//	k = k*logN;
 
 		List<Centroid> cents1 = new ArrayList<Centroid>();
 		
@@ -472,7 +475,9 @@ public class RPHashSimple implements Clusterer {
 
 //		for(Centroid c : cents1.subList(0, Math.min(k,cents1.size()))){
 			
-		for(Centroid c : cents1.subList(0, cents1.size())){	                      // have to try
+//		for(Centroid c : cents1.subList(0, cents1.size())){	                      // This was run for the experiments for wpdm
+			
+		for(Centroid c : cents1.subList(0, Math.max(k,cents1.size()))){	          
 			retcents.add(c.centroid());
 			retcount.add((long) c.getCount());
 			retids.add(c.ids);
@@ -543,9 +548,11 @@ public class RPHashSimple implements Clusterer {
 	private void run() throws IOException {
 	
 		String fs = "/work/deysn/rphash/data/data500.mat";
-		List<Long>[] l1 = mapphase1(so.getk(),fs);
-		List<Long>[] l2 = mapphase1(so.getk(),fs);
-		List<Long>[] lres = reducephase1(l1,l2);
+		int N = 2;														// this is the number of vectors in the data.
+		int logN = (int) (.5 + Math.log(N) / Math.log(2));  		// log N base 2, and round to integer	
+		List<Long>[] l1 = mapphase1(so.getk(),fs ,logN);
+		List<Long>[] l2 = mapphase1(so.getk(),fs , logN);
+		List<Long>[] lres = reducephase1(l1,l2, logN);
 
 		Object[] c1 = mapphase2(lres,fs);
 		Object[] c2 = mapphase2(lres,fs);
@@ -553,7 +560,7 @@ public class RPHashSimple implements Clusterer {
 		//test serialization
 		new ObjectOutputStream(new ByteArrayOutputStream()).writeObject(c1);
 		
-		Object[] cres = reducephase2(c1,c2);
+		Object[] cres = reducephase2(c1,c2,logN);
 		
 		centroids = new Agglomerative3((List) cres[0],so.getk() ).getCentroids();
 		
@@ -566,6 +573,8 @@ public class RPHashSimple implements Clusterer {
 		int k = 10;
 		int d = 1000;
 		int n = 10000;
+		
+		int logN = (int) (.5 + Math.log(n) / Math.log(2));  		// log N base 2, and round to integer	
 		float var = .6f;
 		int count = 5;
 		

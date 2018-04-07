@@ -47,7 +47,7 @@ public class RPHash {
 
 		if (args.length < 3) {
 			System.out
-					.print("Usage: rphash InputFile k OutputFile [CLUSTERING_METHOD ...][OPTIONAL_ARG=value ...]\n");
+					.print("Usage: rphash InputFile k OutputFile NumOfVecs selectorRphash/Twrp [CLUSTERING_METHOD ...][OPTIONAL_ARG=value ...]\n");
 		
 			System.exit(0);
 		}
@@ -59,10 +59,16 @@ public class RPHash {
 		final String filename =  "/work/deysn/rphash/data/data500.mat";
 		int k = Integer.parseInt(args[1]);
 		String outputFile = args[2];
+		
+		int N = Integer.parseInt(args[3]);  						// this is the number of vectors in the data.
+		int logN = (int) (.5 + Math.log(N) / Math.log(2));  		// log N base 2, and round to integer																																
+	
 
 		boolean raw = false;
 		  
-		/*if (args.length == 3) {	
+	// This is the running of the RPhash Simple Algorithm :	
+				
+		if (args.length == 4) {	
 			SparkConf conf = new SparkConf().setAppName("RPHashSimple_Spark");
 		
 			JavaSparkContext sc = new JavaSparkContext(conf);
@@ -84,7 +90,7 @@ public class RPHash {
 				
 				@Override
 			      public List<Long>[] call(Object integer) {
-			        return RPHashSimple.mapphase1(k,filename);
+			        return RPHashSimple.mapphase1(k,filename,logN);
 			      }
 				
 		    }).reduce(new Function2<List<Long>[], List<Long>[], List<Long>[]>() {
@@ -94,7 +100,7 @@ public class RPHash {
 				@Override
 				public List<Long>[] call(List<Long>[] topidsandcounts1, List<Long>[] topidsandcounts2) throws Exception {
 
-					return RPHashSimple.reducephase1(topidsandcounts1,topidsandcounts2);
+					return RPHashSimple.reducephase1(topidsandcounts1,topidsandcounts2,logN);
 				}
 			    });	
 				
@@ -115,22 +121,27 @@ public class RPHash {
 
 			@Override
     		public Object[] call(Object[] cents1, Object[] cents2) throws Exception {
-    			return RPHashSimple.reducephase2(cents1,cents2);
+    			return RPHashSimple.reducephase2(cents1,cents2,logN);
     		}
     	    });
 		    
 		  
 		  //offline cluster
-		    VectorUtil.writeCentroidsToFile(new File(outputFile + ".mat"),new Agglomerative3((List)centroids[0], (k)).getCentroids(), raw);     // changed the last argument from false, to raw
+		    VectorUtil.writeCentroidsToFile(new File(outputFile + ".mat"),new Agglomerative3((List)centroids[0], (k/3)).getCentroids(), raw);     // changed the last argument from false, to raw
 		    
 		    
 		    sc.close();	
 		
 		    
-		    } */
+		    } 
+		
+// End of running for the RPHash simple algorithm.		
 		
 		
-		if (args.length == 4) {	
+		
+// This is the Running of the TWRP algorithm
+		
+	/*	if (args.length == 5) {	
 			SparkConf conf = new SparkConf().setAppName("RPHashAdaptive2Pass_Spark");
 		
 			JavaSparkContext sc = new JavaSparkContext(conf);
@@ -202,7 +213,8 @@ public class RPHash {
 
 		List<Long> sortedIDList= new ArrayList<>();
 		// sort and limit the list
-		stream.sorted(Entry.<Long, Long> comparingByValue().reversed()).limit(k*4)
+	//	stream.sorted(Entry.<Long, Long> comparingByValue().reversed()).limit(k*4)
+		stream.sorted(Entry.<Long, Long> comparingByValue().reversed()).limit(k*12)
 				.forEachOrdered(x -> sortedIDList.add(x.getKey()));
 		
 		// compute centroids
@@ -220,13 +232,14 @@ public class RPHash {
 		
 		List<Float> weights =new ArrayList<>();
 				
-		int j = clustermembers.size()>200+k?200+k:clustermembers.size();
+	//	int j = clustermembers.size()>200+k?200+k:clustermembers.size();
+		int j = (clustermembers.size()) > (600+k)  ?  (600+k) : (clustermembers.size());
 		for(int i=0;i<j;i++){
 			weights.add(new Float(clustermembers.get(i).size()));
 			centroidstwrp.add(medoid(clustermembers.get(i)));
 		}
 		
-		Agglomerative3 aggloOffline =  new Agglomerative3(centroidstwrp, k);
+		Agglomerative3 aggloOffline =  new Agglomerative3(centroidstwrp, (k/3));
 		aggloOffline.setWeights(weights);
 				
 		List<Centroid> finalcents = aggloOffline.getCentroids();
@@ -237,7 +250,10 @@ public class RPHash {
 		    
 		sc.close();	
 
-		    }		
+		    }  */		
+		
+// End of running of the TWRP algorithm		
+		
 		
 		
 		}

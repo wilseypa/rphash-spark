@@ -332,8 +332,10 @@ public class RPHashAdaptive2Pass implements Clusterer, Runnable {
 
 		List<Long> sortedIDList= new ArrayList<>();
 		// sort and limit the list
-		stream.sorted(Entry.<Long, Long> comparingByValue().reversed()).limit(so.getk()*4)
-				.forEachOrdered(x -> sortedIDList.add(x.getKey()));
+	//	stream.sorted(Entry.<Long, Long> comparingByValue().reversed()).limit(so.getk()*4)
+		stream.sorted(Entry.<Long, Long> comparingByValue().reversed()).limit(so.getk()*12)
+		
+		       .forEachOrdered(x -> sortedIDList.add(x.getKey()));
 		
 		// compute centroids
 
@@ -370,7 +372,10 @@ public class RPHashAdaptive2Pass implements Clusterer, Runnable {
 		List<float[]>centroids = new ArrayList<>();
 		
 		List<Float> weights =new ArrayList<>();
-		int k = clustermembers.size()>200+so.getk()?200+so.getk():clustermembers.size();
+//		int k = clustermembers.size()>200+so.getk()?200+so.getk():clustermembers.size();
+		
+		int k = (clustermembers.size()) > (600+so.getk())  ?  (600+so.getk()) : (clustermembers.size());
+		
 		for(int i=0;i<k;i++){
 			weights.add(new Float(clustermembers.get(i).size()));
 			centroids.add(medoid(clustermembers.get(i)));
