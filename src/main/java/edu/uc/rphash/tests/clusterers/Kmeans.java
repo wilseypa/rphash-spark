@@ -1,4 +1,4 @@
-/*package edu.uc.rphash.tests.clusterers;
+package edu.uc.rphash.tests.clusterers;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -87,7 +87,7 @@ public class Kmeans implements Clusterer {
 		// TODO Auto-generated constructor stub
 	}
 
-	
+	/*
 	public float[] computerCentroid(List<Integer> vectors, List<float[]> data) {
 		int d = data.get(0).length;
 		float[] centroid = new float[d];
@@ -211,7 +211,7 @@ public class Kmeans implements Clusterer {
 			System.err.println("Warning: MaxIterations Reached");
 		updateMeans(this.data);
 	}
-	
+	*/
 
 	@Override
 	public List<float[]> getCentroids() {
@@ -298,4 +298,3 @@ public class Kmeans implements Clusterer {
 	}
 
 }
-*/

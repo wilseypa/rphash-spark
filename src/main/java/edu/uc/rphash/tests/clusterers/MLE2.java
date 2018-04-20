@@ -1,4 +1,4 @@
-/*package edu.uc.rphash.tests.clusterers;
+package edu.uc.rphash.tests.clusterers;
 
 import java.util.Arrays;
 import java.util.List;
@@ -8,11 +8,11 @@ import edu.uc.rphash.Clusterer;
 import edu.uc.rphash.Readers.RPHashObject;
 import edu.uc.rphash.Readers.SimpleArrayReader;
 
-*//**
+/**
  * @author lee
  * learns mle model with T topics from words x docs counts data
- *//*
-
+ */
+/*
  * All private methods are so because they for speed reasons do not employ any
  * form of checking for numerical stability. In the case of mle matrices this is
  * acceptable as probability matrices are never negative and the dimensions of 
@@ -20,14 +20,14 @@ import edu.uc.rphash.Readers.SimpleArrayReader;
  * for a unit test of mle, mle will be used to produce the NMF of a matrix, functionality
  * and correctness can be confirmed by finding the product to be equal to the input 
  * matrix
- 
+ */
 public class MLE2 implements Clusterer {
 
 	
 
-	*//**
+	/**
 	 * @param args
-	 *//*
+	 */
 	public static void main(String[] args) {
 		float[][] F = {{1f, 0f, 0f, 2f, 0f},{1f, 1f, 1f, 0f, 0f}, {0f, 0f, 1f, 1f , 1f},{2f, 1f, 1f, 0f, 1f},{1f, 0f, 0f, 2f, 0f},{1f, 1f, 1f, 0f, 0f}, {0f, 0f, 1f, 1f , 1f},{2f, 1f, 1f, 0f, 1f}};
 		for(float[] ff: F){
@@ -89,12 +89,12 @@ public class MLE2 implements Clusterer {
 			wt = normalize(dotProduct(wt,multiply(dotDivide(data,multiply(wt,td)),transpose(td))));
 			
 			//calculate log-likelihood
-		 
+		/* 
 		 *   ___       ___
 		 *   \		     \
 		 *   /__	     /__     n(d,w) log P(d,w)
 		 *  d c D   w c W
-		
+		*/
 			E = sum1D(logDotProduct(data,multiply(wt,td)));
 			F_new = sum(E)/tot;
 			
@@ -298,4 +298,3 @@ public class MLE2 implements Clusterer {
 	}
 
 }
-*/

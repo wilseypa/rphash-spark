@@ -1,4 +1,4 @@
-/*package edu.uc.rphash;
+package edu.uc.rphash;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -95,4 +95,3 @@ public class RPHashConsensusRP  implements Clusterer{
 	
 	
 }
-*/

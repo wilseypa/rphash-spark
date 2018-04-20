@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
-import edu.uc.rphash.frequentItemSet.Countable;
 import edu.uc.rphash.standardhash.MurmurHash;
 import edu.uc.rphash.util.VectorUtil;
 
@@ -16,7 +15,7 @@ import edu.uc.rphash.util.VectorUtil;
  *
  */
 public class Spherical implements Decoder {
-	int HashBits = 32;
+	int HashBits = 64;
 	final List<List<float[]>> vAll; // vAll[i][j] is the vector $A_i \tilde v_j$
 									// from
 	// the article.
@@ -46,7 +45,7 @@ public class Spherical implements Decoder {
 	public Spherical(int d, int k, int L) {
 		this.d = d;// number of dimensions
 		this.k = k;// number of elementary hash functions
-		this.l = L;// L;//number of copies to search
+		this.l = 1;// L;//number of copies to search
 		double nvertex = 2.0 * this.d;
 		this.hbits = (int) Math.ceil(Math.log(nvertex) / Math.log(2));
 		int kmax = (int) (HashBits / this.hbits);
@@ -82,7 +81,8 @@ public class Spherical implements Decoder {
 
 	@Override
 	public long[] decode(float[] f) {
-		return  Hash(f);
+		long dec = Hash(f);
+		return new long[] { dec };
 	}
 
 	@Override
@@ -181,28 +181,27 @@ public class Spherical implements Decoder {
 	// thus having the same norm. Only the Similarity method of FeatureVector
 	// is required to take the normalization into account.
 	//
-	// The complexity of this function is O(nLK)
-	long[] Hash(float[] p) {
+	// The complexity of this function is O(nL)
+	long Hash(float[] p) {
 		int ri = 0;
-		long[] h = new long[l];
-		float normp = norm(p);
-		p = scale(p, 1.0f / normp);
+		long h = 0;
+//		float normp = norm(p);
+//		p = scale(p, 1.0f / normp);
 		for (int i = 0; i < this.l; i++) {
 			for (int j = 0; j < this.k; j++) {
-				h[i] = h[i] | this.argmaxi(p, ri);
-				h[i] <<= this.hbits;
+				h = h | this.argmaxi(p, ri);
+				h <<= this.hbits;
 				ri++;
 			}
 		}
-		
-		return h;//+ (int) (normp);
+		return h ;//+ (int) (normp);
 
 	}
 
 	public static void main(String[] args) {
 		Random r = new Random();
-		int d = 16;
-		int K = 3;
+		int d = 64;
+		int K = 2;
 		int L = 1;
 		Spherical sp = new Spherical(d, K, L);
 
@@ -247,27 +246,16 @@ public class Spherical implements Decoder {
 		}
 	}
 
-	float[] variance;
+	float variance = 1f;
 
-//	@Override
-//	public void setVariance(float[] parameterObject) {
-//		variance = parameterObject;
-//	}
-//	
-//	@Override
-//	public float[] getVariance(){
-//		return variance;
-//	}
-	
 	@Override
-	public boolean selfScaling() {
-		return true;
+	public void setVariance(Float parameterObject) {
+		variance = parameterObject;
 	}
 
 	@Override
-	public void setCounter(Countable counter) {
-		// TODO Auto-generated method stub
-		
+	public boolean selfScaling() {
+		return true;
 	}
 
 }

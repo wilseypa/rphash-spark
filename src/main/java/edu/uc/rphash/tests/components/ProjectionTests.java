@@ -1,4 +1,4 @@
-/*package edu.uc.rphash.tests.components;
+package edu.uc.rphash.tests.components;
 
 import java.util.Random;
 
@@ -21,9 +21,9 @@ public class ProjectionTests {
 		
 		
 		Projector[] p1 = new Projector[ nlog]; 
-		for(int i =0;i<p1.length;i++)p1[i]=new GaussianFJLTProjection(d,24,1);
+		for(int i =0;i<p1.length;i++)p1[i]=new /*Gaussian*/FJLTProjection(d,24,1);
 		Projector[] p2 = new Projector[ nlog]; 
-		for(int i =0;i<p2.length;i++)p2[i]=new GaussianFJLTProjection(d,24,1);
+		for(int i =0;i<p2.length;i++)p2[i]=new /*Gaussian*/FJLTProjection(d,24,1);
 		
 		for(int i =0;i<gen.data.size();i+=2){
 			//LSH lsh =  new LSH(dec,p1[0],hal);
@@ -47,7 +47,6 @@ public class ProjectionTests {
 		   System.out.println(multi+":"+sum/sumun+"|"+sumreal/sumunreal);
 	}	
 	public static void main(String[] args){
-	 for(int i = 0; i<100;i++)testRPH(1000,24,4);
+	/* for(int i = 0; i<100;i++)*/testRPH(1000,24,4);
 	}
 }
-*/
