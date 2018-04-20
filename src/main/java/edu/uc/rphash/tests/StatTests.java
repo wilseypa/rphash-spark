@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Random;
 
-import edu.uc.rphash.Centroid;
 import edu.uc.rphash.Readers.StreamObject;
 import edu.uc.rphash.tests.generators.ClusterGenerator;
 import edu.uc.rphash.util.AtomicFloat;
@@ -37,89 +36,15 @@ public class StatTests {
 		{
 			if(VectorUtil.findNearestDistance(data.get(i), estCentroids)==labels.get(i))count++;
 		}
+		System.out.println(data.size());
 		return (float)count/(float)data.size();
 	}
-	
-	/** Naive sum of square errors, nothing fancy, baseline from the definition
-	 * @param data
-	 * @return
-	 */
-	public static double[] WCSS(List<double[]> data){
-		
-		double d = data.get(0).length;
-		double[] ret = new double[(int)d];
-		double[] mean = mean(data);
-		
-		//compute the squared distance from mean
-		for(double[] vec : data)
-		{
-			for(int i = 0;i<d;i++){
-				ret[i] += ((vec[i]-mean[i])*(vec[i]-mean[i]));
-			}
-		}
-		for(int i = 0;i<d;i++){
-			ret[i] = ret[i]/(double)(data.size());
-		}
-
-		return ret;
-	}
-	/** Naive vector set mean, nothing fancy, baseline from the definition
-	 * @param data
-	 * @return
-	 */
-	public static double[] mean(List<double[]> data){
-		int d = data.get(0).length;
-		double[] mean = new double[d];
-		//sum up all the vectors per dimension
-		for(double[] vec : data)
-		{
-			for(int i = 0;i<d;i++){
-				mean[i]+= vec[i];
-			}
-		}
-		
-		//divide by set size, by the book
-		for(int i = 0;i<d;i++){
-			mean[i]/= (double)data.size() ;
-		}
-		return mean;
-	}
-	
 	
 	
 	public static double WCSSE(List<float[]> estCentroids, List<float[]> data){
 		double count = 0.0 ;
 		for(int i = 0; i< data.size();i++)
 		{
-			count+=VectorUtil.distance(data.get(i),estCentroids.get(VectorUtil.findNearestDistance(data.get(i), estCentroids))) ;
-		}
-		return count;
-	}
-	
-	
-	public static double WCSSE(List<Centroid> estCentroids, List<Centroid> data,boolean skip){
-		double count = 0.0 ;
-		for(int i = 0; i< data.size();i++)
-		{
-			count+=VectorUtil.distance(data.get(i).centroid(),estCentroids.get(VectorUtil.findNearestDistance(data.get(i), estCentroids)).centroid()) ;
-		}
-		return count;
-	}
-	
-	public static double WCSSECentroidsFloat(List<Centroid> estCentroids, List<float[]> data){
-		double count = 0.0 ;
-		for(int i = 0; i< data.size();i++)
-		{
-			count+=VectorUtil.distance(data.get(i),estCentroids.get(VectorUtil.findNearestDistance(new Centroid(data.get(i),0), estCentroids)).centroid()) ;
-		}
-		return count;
-	}
-	
-	public static double WCSSEFloatCentroid(List<float[]> estCentroids, List<float[]> data){
-		double count = 0.0 ;
-		for(int i = 0; i< data.size();i++)
-		{
-			
 			count+=VectorUtil.distance(data.get(i),estCentroids.get(VectorUtil.findNearestDistance(data.get(i), estCentroids))) ;
 		}
 		return count;
@@ -254,69 +179,43 @@ public class StatTests {
 	}
 	
 	public static float[] varianceCol(List<float[]> data){
-		int d =data.get(0).length;
-		float[] mean = new float[d];
-		float[] M2 = new float[d];
-		float[] variance = new float[d];
-		float n = 0;
-
-		for(float[] x : data){
-			n++;
-			for(int i =0;i<d;i++){
-				float delta = x[i] - mean[i];
-				mean[i] = mean[i] + delta/n;
-				M2[i] = M2[i] + delta*(x[i]-mean[i]);
+		if(data.size()<1)return null;
+		float[] vars = new float[data.get(0).length];
+		for(int i=0;i<data.size();i++ )
+		{
+			float n = 0;
+			float mean = 0;
+			float M2 = 0;
+			
+			for(float x : data.get(i)){
+				n++;
+				float delta = x - mean;
+				mean = mean + delta/n;
+				M2 = M2 + delta*(x-mean);
 			}
+			if(n<2)vars[i]=0;
+			else vars[i] = M2/(n-1f);
 		}
-		if(n<2)return new float[d];
-		for(int i =0;i<d;i++)
-			variance[i] = ((float)M2[i]/(n-1f));
-		return variance;
+		return vars;
 	}
 	
-	public static float[] meanCols(List<float[]> data){
-		int d =data.get(0).length;
-		float[] mean = new float[d];
-		float n = 0;
-
-		for(float[] x : data){
-			n++;
-			for(int i =0;i<d;i++){
-				float delta = x[i] - mean[i];
-				mean[i] = mean[i] + delta/n;
-			}
-		}
-		if(n<2)return new float[d];
-		return mean;
-	}
-	
-	public static float[][] meanAndVarianceCols(List<float[]> data){
-		int d =data.get(0).length;
-		float[] mean = new float[d];
-		float[] M2 = new float[d];
-		float[] variance = new float[d];
-		float n = 0;
-
-		for(float[] x : data){
-			n++;
-			for(int i =0;i<d;i++){
-				float delta = x[i] - mean[i];
-				mean[i] = mean[i] + delta/n;
-				M2[i] = M2[i] + delta*(x[i]-mean[i]);
-			}
-		}
+	public static float[] averageCol(List<float[]> data){
+		if(data.size()<1)return null;
+		int n = data.size();
+		int d = data.get(0).length;
+		float[] avgs = new float[d];
 		
-		float[][] ret = new float[2][];
-		
-		if(n<2)return ret;
-		for(int i =0;i<d;i++)
-			variance[i] = ((float)M2[i]/(n-1f));
 
-		ret[0] = mean;
-		ret[1] = variance;
-		return ret;
+		for(float[] tmp : data){
+
+			for(int j=0;j<d;j++)
+			{
+				avgs[j]+=(tmp[j]/n);
+			}	
+			
+		}
+		return avgs;
 	}
-	
 
 	public static double variance(double[] row) {
 		double n = 0;
@@ -334,59 +233,18 @@ public class StatTests {
 	}
 	
 	public static float variance(float[] row) {
-		double n = 0;
-		double mean = 0;
-		double M2 = 0;
-		for(double x : row){
+		float n = 0;
+		float mean = 0;
+		float M2 = 0;
+		for(float x : row){
 			n++;
-			double delta = x - mean;
+			float delta = x - mean;
 			mean = mean + delta/n;
 			M2 = M2 + delta*(x-mean);
 		}
 		if(n<2)return 0;
 		
-		return  (float) (M2/(n-1f));
-	}
-	
-	public List<float[]> zscorenormalize(List<float[]> X){
-		int d = X.get(0).length;
-		float[] mean = new float[d];
-		float[] M2 = new float[d];
-		float[] variance = new float[d];
-		float n = 0;
-
-		for(float[] x : X){
-			n++;
-			for(int i =0;i<d;i++){
-				float delta = x[i] - mean[i];
-				mean[i] = mean[i] + delta/n;
-				M2[i] = M2[i] + delta*(x[i]-mean[i]);
-			}
-		}
-		if(n<2)return X;
-		for(int i =0;i<d;i++)
-			variance[i] = ((float)M2[i]/(n-1f));
-		
-		
-		for(int j =0;j<X.size();j++)
-		{
-			float[] tmp = new float[d];
-			float[] curvec =X.get(j);
-			for(int i =0;i<d;i++){
-				tmp[i]=(float) ((curvec[i]-mean[i])/Math.sqrt(variance[i]));
-			}
-			X.set(j, tmp);
-		}
-		return X;
-	}
-	
-	static public float[] znormvec(float[] curvec,float[] mean,float[] variance){
-		int d = curvec.length;
-		float[] tmp = new float[d];
-		for(int i =0;i<d;i++){
-			tmp[i]=(float) ((curvec[i]-mean[i])/Math.sqrt(variance[i]));
-		}
-		return tmp;
+		return  M2/(n-1f);
 	}
 
 }

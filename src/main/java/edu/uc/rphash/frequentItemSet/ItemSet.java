@@ -3,7 +3,7 @@ package edu.uc.rphash.frequentItemSet;
 import java.util.List;
 
 
-public interface ItemSet<E> extends Countable {
+public interface ItemSet<E> {
 	class tuple<E> implements Comparable<tuple<E>>{
 		E key;
 		Integer value;
@@ -19,8 +19,8 @@ public interface ItemSet<E> extends Countable {
 	}
 	
 	public Object getBaseClass();
+	public boolean add(E e);
 	public List<E> getTop();
 	public List<Long> getCounts();
-	
 
 }

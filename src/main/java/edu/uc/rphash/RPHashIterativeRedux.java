@@ -1,4 +1,4 @@
-/*package edu.uc.rphash;
+package edu.uc.rphash;
 
 
 
@@ -23,12 +23,12 @@ import edu.uc.rphash.tests.StatTests;
 import edu.uc.rphash.tests.generators.GenerateData;
 import edu.uc.rphash.util.VectorUtil;
 
-*//**This is the Iterative Redux Version Of RPHash
+/**This is the Iterative Redux Version Of RPHash
  * Instead of a constant number of passes over the data as in RPHash
  * the Redux variant does k-passes over the data, finding the max
  * density mode at each pass, up to k density modes. 
  * @author lee
- *//*
+ */
 public class RPHashIterativeRedux  implements Clusterer
 {
 	float variance;
@@ -200,4 +200,3 @@ public class RPHashIterativeRedux  implements Clusterer
 	}
 
 }
-*/

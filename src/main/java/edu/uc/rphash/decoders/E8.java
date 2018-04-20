@@ -1,4 +1,4 @@
-/*package edu.uc.rphash.decoders;
+package edu.uc.rphash.decoders;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -66,13 +66,13 @@ public class E8 implements Decoder {
 	}
 
 	@Override
-	*//**
+	/**
 	 * this decoder uses the D8 partition to decode E8 lattice it returns an
 	 * integer label for the lattice point
 	 * 
 	 * @param r
 	 * @return
-	 *//*
+	 */
 	public long[] decode(float[] f) {
 
 		byte[] tmp = closestPoint(f);
@@ -175,4 +175,3 @@ public class E8 implements Decoder {
 		return false;
 	}
 }
-*/

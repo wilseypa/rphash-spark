@@ -1,11 +1,10 @@
-/*package edu.uc.rphash.tests;
+package edu.uc.rphash.tests;
 
 
 import java.util.List;
 
-import edu.uc.rphash.Centroid;
 import edu.uc.rphash.RPHashSimple;
-import edu.uc.rphash.tests.clusterers.LloydIterativeKmeans;
+import edu.uc.rphash.tests.clusterers.Kmeans;
 import edu.uc.rphash.tests.generators.GenerateData;
 import edu.uc.rphash.util.VectorUtil;
 
@@ -25,13 +24,13 @@ public class TestRPhash {
 		
 		
 		long startTime = System.nanoTime();
-		List<Centroid> M = ( new LloydIterativeKmeans(k,gen.data(),projdim)).getCentroids();
+		List<float[]> M = ( new Kmeans(k,gen.data(),projdim)).getCentroids();
 		long duration = (System.nanoTime() - startTime);
 
-//		List<float[]> aligned = VectorUtil.alignCentroids(M,gen.medoids());
-//		System.out.print(StatTests.PR(aligned,gen)+":"+duration/1000000000f);
-//		System.out.print("\t");
-//		System.gc();
+		List<float[]> aligned = VectorUtil.alignCentroids(M,gen.medoids());
+		System.out.print(StatTests.PR(aligned,gen)+":"+duration/1000000000f);
+		System.out.print("\t");
+		System.gc();
 
 
 		
@@ -39,12 +38,12 @@ public class TestRPhash {
 		
 		
 		startTime = System.nanoTime();
-		List<Centroid> centroids = rph.getCentroids();
+		List<float[]> centroids = rph.getCentroids();
 		duration = (System.nanoTime() - startTime);
 		
-//		aligned  = VectorUtil.alignCentroids(centroids,gen.medoids());
-//		System.out.print(StatTests.PR(aligned,gen)+":"+duration/1000000000f);
-//		System.out.print("\t");
+		aligned  = VectorUtil.alignCentroids(centroids,gen.medoids());
+		System.out.print(StatTests.PR(aligned,gen)+":"+duration/1000000000f);
+		System.out.print("\t");
 		System.gc();
 		
 
@@ -172,4 +171,3 @@ public class TestRPhash {
 	
 
 }
-*/
