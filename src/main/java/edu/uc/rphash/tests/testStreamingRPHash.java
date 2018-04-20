@@ -2,11 +2,10 @@ package edu.uc.rphash.tests;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
+import edu.uc.rphash.Centroid;
+import edu.uc.rphash.RPHashMultiProj;
 import edu.uc.rphash.RPHashStream;
-import edu.uc.rphash.RPHashStreamingAK;
-import edu.uc.rphash.StreamClusterer;
 import edu.uc.rphash.tests.clusterers.StreamingKmeans;
 import edu.uc.rphash.tests.generators.GenerateStreamData;
 import edu.uc.rphash.util.VectorUtil;
@@ -28,7 +27,7 @@ public class testStreamingRPHash {
 		Runtime rt = Runtime.getRuntime();
 		List<float[]> data = VectorUtil.readFile(filename, false);
 
-		RPHashStream rphit = new RPHashStream(data, k,processors!=1);
+		RPHashStream rphit = new RPHashStream(data, k);
 
 		// System.out.printf("Running Streaming RPHash on %d processors, d=%d,k=%d,n=%d\n",rphit.getProcessors(),d,k,interval);
 		// StreamClusterer rphit = new StreamingKmeans(data, k);
@@ -43,13 +42,13 @@ public class testStreamingRPHash {
 			rphit.addVectorOnlineStep(data.get(i));
 
 			if (i % interval == 0) {
-				List<float[]> cents = rphit.getCentroidsOfflineStep();
+				List<Centroid> cents = rphit.getCentroidsOfflineStep();
 				long time = System.nanoTime() - timestart;
 
 				rt.gc();
 				long usedkB = (rt.totalMemory() - rt.freeMemory()) / 1024;
 
-				double wcsse = StatTests.WCSSE(cents, data);
+				double wcsse = StatTests.WCSSECentroidsFloat(cents, data);
 
 				System.gc();
 				System.out.printf("%d\t%d\t%.4f\t%.0f\n", i, usedkB,
@@ -60,90 +59,79 @@ public class testStreamingRPHash {
 
 	}
 
-	public static void generateAndStream() {
-		int k = 10;
-		int d = 1000;
-		float var = 1f;
+	public static void generateAndStream() throws InterruptedException {
 
+		int k = 10;
+		int d = 5000;
+		float var = 1f;
+		int interval = 1000;
 		Runtime rt = Runtime.getRuntime();
-		int processors = rt.availableProcessors();
 
 		GenerateStreamData gen1 = new GenerateStreamData(k, d, var, 11331313);
-
-		ArrayList<float[]> vecsInThisRound = new ArrayList<float[]>();
-		int interval = 10000;
-
-		RPHashStream rphit = new RPHashStream(k, gen1, processors);
-
-		StreamClusterer rphit2 = new StreamingKmeans(k, gen1);
-
-		Random noiseDataRandomSrc = new Random();
-
-		System.out.printf("Vecs\tMem(KB)\tTime\tWCSSE\tCentSSE\n");
+		GenerateStreamData noise = new GenerateStreamData(1, d, var*10, 11331313);
+		RPHashStream rphit = new RPHashStream(k, gen1,rt.availableProcessors());
+		StreamingKmeans skmi = new StreamingKmeans(k, gen1);
+		System.out.printf("\tStreamingRPHash\t\t\tStreamingKmeans\t\tReal\n");
+		System.out.printf("Vecs\tMem(KB)\tTime\tWCSSE\t\tTime\tWCSSE\t\tWCSSE\n");
+		
 		long timestart = System.nanoTime();
-		for (int i = 0; i < 2500000; i++) {
+		for (int i = 0; i < 2500000;) {
+			ArrayList<float[]> vecsAndNoiseInThisRound = new ArrayList<float[]>();
+			ArrayList<float[]> justvecsInThisRound = new ArrayList<float[]>();
+			
+			for (int j = 1; j < interval && i < 2500000; i++, j++){
+				float[] vec = gen1.generateNext();
+				vecsAndNoiseInThisRound.add(vec);
+				justvecsInThisRound.add(vec);
+				vecsAndNoiseInThisRound.add(noise.generateNext());
+			}
+			
+			timestart = System.nanoTime();
+			for (float[] f : vecsAndNoiseInThisRound) {
+				rphit.addVectorOnlineStep(f);
+			}
+			List<Centroid> cents = rphit.getCentroidsOfflineStep();
+			long time = System.nanoTime() - timestart;
 
-			if (i % 2 == 0) {
-				float[] noi = new float[d];
-				for (int j = 0; j < d; j++)
-					noi[j] = (noiseDataRandomSrc.nextFloat()) * 2.0f - 1.0f;
-				vecsInThisRound.add(noi);
+			rt.gc();
+			long usedkB = (rt.totalMemory() - rt.freeMemory()) / 1024;
+
+			prettyPrint(cents);
+			
+			double wcsse = StatTests.WCSSECentroidsFloat(cents, justvecsInThisRound);
+			double realwcsse = StatTests.WCSSE(gen1.medoids, justvecsInThisRound);
+			
+			System.out.printf("%d\t%d\t%.4f\t%.1f\t\t", i, usedkB,
+					time / 1000000000f, wcsse);
+			rt.gc();
+			Thread.sleep(1000);
+			rt.gc();
+			
+			timestart = System.nanoTime();
+			for (float[] f : vecsAndNoiseInThisRound) {
+				skmi.addVectorOnlineStep(f);
 			}
 
-			vecsInThisRound.add(gen1.generateNext());
+			cents = skmi.getCentroidsOfflineStep();
+			time = System.nanoTime() - timestart;
 
-			if (i % interval == interval - 1) {
+			rt.gc();
+			usedkB = (rt.totalMemory() - rt.freeMemory()) / 1024;
 
-				timestart = System.nanoTime();
-				for (float[] f : vecsInThisRound) {
-					rphit.addVectorOnlineStep(f);
-
-				}
-
-				List<float[]> cents = rphit.getCentroidsOfflineStep();
-				long time = System.nanoTime() - timestart;
-
-				rt.gc();
-				long usedkB = (rt.totalMemory() - rt.freeMemory()) / 1024;
-
-				List<float[]> aligned = VectorUtil.alignCentroids(cents,
-						gen1.getMedoids());
-				double wcsse = StatTests.WCSSE(cents, vecsInThisRound);
-				double ssecent = StatTests.SSE(aligned, gen1);
-
-				// recreate vectors at execution time to check average
-				System.gc();
-				System.out.printf("%d\t%d\t%.4f\t%.0f\t%.3f\t", i, usedkB,
-						time / 1000000000f, wcsse, ssecent);
-
-				timestart = System.nanoTime();
-				for (float[] f : vecsInThisRound) {
-					rphit2.addVectorOnlineStep(f);
-				}
-
-				cents = rphit2.getCentroidsOfflineStep();
-				time = System.nanoTime() - timestart;
-
-				rt.gc();
-				usedkB = (rt.totalMemory() - rt.freeMemory()) / 1024;
-
-				aligned = VectorUtil.alignCentroids(cents, gen1.getMedoids());
-				wcsse = StatTests.WCSSE(cents, vecsInThisRound);
-				ssecent = StatTests.SSE(aligned, gen1);
-
-				System.gc();
-				System.out.printf("%d\t%d\t%.4f\t%.0f\t%.3f\t\n", i, usedkB,
-						time / 1000000000f, wcsse, ssecent);
-
-				vecsInThisRound = new ArrayList<float[]>();
-			}
+			wcsse = StatTests.WCSSECentroidsFloat(cents, justvecsInThisRound);
+			// recreate vectors at execution time to check average
+			rt.gc();
+			Thread.sleep(1000);
+			rt.gc();
+			
+			System.out.printf("%.4f\t%.1f\t\t%.1f\n",time/ 1000000000f,wcsse,realwcsse);
 		}
 	}
 
 	public static void streamingPushtest() {
 		int k = 10;
 		int d = 1000;
-		float var = .5f;
+		float var = 4.5f;
 
 		GenerateStreamData gen1 = new GenerateStreamData(k, d, var, 11331313);
 
@@ -167,6 +155,29 @@ public class testStreamingRPHash {
 //		readFileData(args);
 		generateAndStream();
 //		streamingPushtest();
+	}
+	
+	 static void prettyPrint(List<Centroid> cs){
+
+			int n = cs.get(0).centroid.length;
+			boolean curtailm = n > 10;
+			if (curtailm) {
+				for (int i = 0; i < 4; i++) {
+					VectorUtil.prettyPrint(cs.get(i).centroid);
+				}
+				for (int j = 0; j < n / 2; j++)
+					System.out.print("\t");
+				System.out.print(" ...\n");
+				for (int i = cs.size() - 4; i < cs.size(); i++) {
+					VectorUtil.prettyPrint(cs.get(i).centroid);
+				}
+			} else {
+				for (int i = 0; i < cs.size(); i++) {
+					VectorUtil.prettyPrint(cs.get(i).centroid);
+					System.out.print("\n");
+				}
+			}
+		
 	}
 
 }

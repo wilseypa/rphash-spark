@@ -1,4 +1,4 @@
-package edu.uc.rphash.decoders;
+/*package edu.uc.rphash.decoders;
 
 import java.util.Random;
 
@@ -18,9 +18,9 @@ public class Dn implements Decoder {
 	}
 	
 	static float dist(float[] x, float[] s) {
-	    /**
+	    *//**
 	     * Euclidean distance between two vectors
-	     */
+	     *//*
 	        float out = 0.0f;
 	        for (int i = 0; i < x.length; i++) {
 	            out += Math.pow(x[i] - s[i], 2.0);
@@ -157,3 +157,4 @@ public class Dn implements Decoder {
 	
 
 }
+*/

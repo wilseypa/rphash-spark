@@ -1,4 +1,4 @@
-package edu.uc.rphash.decoders;
+/*package edu.uc.rphash.decoders;
 
 import java.util.HashMap;
 import java.util.Random;
@@ -10,7 +10,7 @@ import edu.uc.rphash.util.VectorUtil;
 
 import org.apache.commons.math3.distribution.LevyDistribution;
 
-/**
+*//**
  * Locality-Sensitive Hashing Scheme Based on p-Stable Distributions.
  *
  *
@@ -21,7 +21,7 @@ import org.apache.commons.math3.distribution.LevyDistribution;
  * Locality-sensitive hashing scheme based on p-stable distributions,
  * Proceedings of the twentieth annual symposium on Computational geometry, June
  * 08-11, 2004, Brooklyn, New York, USA.
- */
+ *//*
 public class PsdLSH  implements Decoder {
 	public static int LEVY = 0;	
 	public static int CAUCHY = 1;
@@ -234,3 +234,4 @@ public class PsdLSH  implements Decoder {
 	}
 
 }
+*/

@@ -1,4 +1,4 @@
-package edu.uc.rphash.decoders;
+/*package edu.uc.rphash.decoders;
 
 import java.util.Random;
 
@@ -120,3 +120,4 @@ public class PStableDistribution implements Decoder {
 		return false;
 	}
 }
+*/
