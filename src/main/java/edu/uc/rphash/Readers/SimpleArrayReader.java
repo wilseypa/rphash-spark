@@ -3,30 +3,41 @@ package edu.uc.rphash.Readers;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
+
+import edu.uc.rphash.Centroid;
+import edu.uc.rphash.Clusterer;
+import edu.uc.rphash.decoders.Decoder;
+import edu.uc.rphash.decoders.MultiDecoder;
+import edu.uc.rphash.projections.Projector;
+import edu.uc.rphash.tests.StatTests;
+import edu.uc.rphash.tests.generators.ClusterGenerator;
+
 
 import org.apache.spark.api.java.JavaRDD;
 
-import edu.uc.rphash.decoders.Decoder;
-import edu.uc.rphash.decoders.MultiDecoder;
-import edu.uc.rphash.tests.StatTests;
-import edu.uc.rphash.tests.generators.ClusterGenerator;
+
 
 public class SimpleArrayReader implements RPHashObject {
 
 	List<float[]> data;
-	JavaRDD<List<Float>> dataset;
 	Integer dim = null;
 	int numProjections;
 	int decoderMultiplier;
 	long randomSeed;
 	long hashmod;
-	final int k;
+	int k;
 	int numBlur;
 	Decoder dec;
 	float decayrate;
-	List<float[]> centroids;
+	List<Centroid> centroids;
 	List<Long> topIDs;
 	boolean parallel = true;
+	private int dimparameter;
+	List<Float> counts;
+	private Clusterer clusterer;
+	private boolean normalize = false;
+	private Projector projector;
 
 	public void setRandomSeed(long randomSeed) {
 		this.randomSeed = randomSeed;
@@ -37,87 +48,105 @@ public class SimpleArrayReader implements RPHashObject {
 	}
 
 	public SimpleArrayReader(ClusterGenerator gen,int k) {
+
 		this.dim = gen.getDimension();
-		this.randomSeed = DEFAULT_NUM_RANDOM_SEED;
+		this.randomSeed = new Random().nextLong();
 		this.hashmod = DEFAULT_HASH_MODULUS;
 		this.decoderMultiplier = DEFAULT_NUM_DECODER_MULTIPLIER;
-		this.dec = new MultiDecoder(this.decoderMultiplier*DEFAULT_INNER_DECODER.getDimensionality(),DEFAULT_INNER_DECODER);
+		if(decoderMultiplier>1)
+			this.dec = new MultiDecoder(this.decoderMultiplier*DEFAULT_INNER_DECODER.getDimensionality(),DEFAULT_INNER_DECODER);
+		else
+			this.dec = DEFAULT_INNER_DECODER;
 		this.numProjections = DEFAULT_NUM_PROJECTIONS;
 		this.numBlur = DEFAULT_NUM_BLUR;
 		this.k = k;
 //		this.n = 0;
-		this.centroids = new ArrayList<float[]>();
+		this.centroids = new ArrayList<Centroid>();
 		this.topIDs = new ArrayList<Long>();
 		this.data = gen.getData();
 		this.decayrate = 0;
+		this.dimparameter = DEFAULT_DIM_PARAMETER;
+		this.clusterer = DEFAULT_OFFLINE_CLUSTERER;
+		this.projector = DEFAULT_PROJECTOR;
 	}
 	
 	
 	
-	public SimpleArrayReader(JavaRDD<List<Float>> X, int k) {
+	public SimpleArrayReader(List<float[]> X, int k) {
 
-		this.randomSeed = DEFAULT_NUM_RANDOM_SEED;
+		this.randomSeed = new Random().nextLong();
 		this.hashmod = DEFAULT_HASH_MODULUS;
 		this.decoderMultiplier = DEFAULT_NUM_DECODER_MULTIPLIER;
-		this.dec = new MultiDecoder(this.decoderMultiplier*DEFAULT_INNER_DECODER.getDimensionality(),DEFAULT_INNER_DECODER);
+		if(this.decoderMultiplier>1)
+			this.dec = new MultiDecoder(this.decoderMultiplier*DEFAULT_INNER_DECODER.getDimensionality(),DEFAULT_INNER_DECODER);
+		else
+			this.dec = DEFAULT_INNER_DECODER;
 		this.numProjections = DEFAULT_NUM_PROJECTIONS;
 		this.numBlur = DEFAULT_NUM_BLUR;
-		this.dataset = X;
-		if(dataset!=null)
-			this.dim = dataset.first().size();
-		else 
-			this.dim = null;
-		this.k = k;
-		this.centroids = new ArrayList<float[]>();
-		this.topIDs = new ArrayList<Long>();
-		this.decayrate = 0;
-//		for (int i = 0; i < k; i++)
-//			topIDs.add((long) 0);
-	}
-
-	public SimpleArrayReader(List<float[]> X, int k, int blur) {
-
-		this.randomSeed = DEFAULT_NUM_RANDOM_SEED;
-		this.hashmod = DEFAULT_HASH_MODULUS;
-		this.decoderMultiplier = DEFAULT_NUM_DECODER_MULTIPLIER;
-		this.dec = new MultiDecoder(this.decoderMultiplier*DEFAULT_INNER_DECODER.getDimensionality(),DEFAULT_INNER_DECODER);
-		this.numProjections = DEFAULT_NUM_PROJECTIONS;
-		this.numBlur = blur;
-		data = X;
-//		this.n = X.size();
+		this.data = X;
 		if(data!=null)
 			this.dim = data.get(0).length;
 		else 
 			this.dim = null;
 		this.k = k;
-		this.centroids = new ArrayList<float[]>();
+		this.centroids = new ArrayList<Centroid>();
 		this.topIDs = new ArrayList<Long>();
-		for (int i = 0; i < k; i++)
-			topIDs.add((long) 0);
 		this.decayrate = 0;
+		this.dimparameter = DEFAULT_DIM_PARAMETER;
+		this.clusterer = DEFAULT_OFFLINE_CLUSTERER;
+		this.projector = DEFAULT_PROJECTOR;
+//		for (int i = 0; i < k; i++)
+//			topIDs.add((long) 0);
 	}
+
+//	public SimpleArrayReader(List<float[]> X, int k, int blur) {
+//
+//		this.randomSeed = DEFAULT_NUM_RANDOM_SEED;
+//		this.hashmod = DEFAULT_HASH_MODULUS;
+//		this.decoderMultiplier = DEFAULT_NUM_DECODER_MULTIPLIER;
+//		this.dec = new MultiDecoder(this.decoderMultiplier*DEFAULT_INNER_DECODER.getDimensionality(),DEFAULT_INNER_DECODER);
+//		this.numProjections = DEFAULT_NUM_PROJECTIONS;
+//		this.numBlur = blur;
+//		this.data = X;
+////		this.n = X.size();
+//		if(this.data!=null)
+//			this.dim = data.get(0).length;
+//		else 
+//			this.dim = null;
+//		this.k = k;
+//		this.centroids = new ArrayList<Centroid>();
+//		this.topIDs = new ArrayList<Long>();
+//		for (int i = 0; i < k; i++)
+//			topIDs.add((long) 0);
+//		this.decayrate = 0;
+//		this.dimparameter = DEFAULT_DIM_PARAMETER;
+//		this.clusterer = DEFAULT_OFFLINE_CLUSTERER;
+//	}
 
 	public SimpleArrayReader(List<float[]> X, int k, int blur,
 			int decoderMultiplier) {
 
-		this.randomSeed = DEFAULT_NUM_RANDOM_SEED;
+		this.randomSeed = new Random().nextLong();
 		this.hashmod = DEFAULT_HASH_MODULUS;
 		this.dec = new MultiDecoder(this.decoderMultiplier*DEFAULT_INNER_DECODER.getDimensionality(),DEFAULT_INNER_DECODER);
 		this.numProjections = DEFAULT_NUM_PROJECTIONS;
 		this.numBlur = blur;
 		this.decoderMultiplier = decoderMultiplier;
 		this.decayrate = 0;
+		this.dimparameter = DEFAULT_DIM_PARAMETER;
 		
-		data = X;
-		if(data!=null)
-			this.dim = data.get(0).length;
+		this.data = X;
+		if(this.data!=null)
+			this.dim = this.data.get(0).length;
 		else 
 			this.dim = null;
 		this.k = k;
-		this.centroids = new ArrayList<float[]>();
+		this.centroids = new ArrayList<Centroid>();
 		this.topIDs = new ArrayList<Long>();
 		for (int i = 0; i < k; i++)
 			topIDs.add((long) 0);
+		this.clusterer = DEFAULT_OFFLINE_CLUSTERER;
+		this.projector = DEFAULT_PROJECTOR;
 	}
 
 	/**
@@ -125,44 +154,54 @@ public class SimpleArrayReader implements RPHashObject {
 	 * multi-projection clusterer
 	 * 
 	 * @param X
-	 * @param k
+	 * @param t
 	 * @param randomSeed
 	 * @param hashmod
 	 * @param blur
 	 * @param decoderMutiplier
 	 * @param numProjections
 	 */
-	public SimpleArrayReader(List<float[]> X, int k, int blur,
-			int decoderMultiplier, int numProjections) {
-		this.randomSeed = DEFAULT_NUM_RANDOM_SEED;
+//	public SimpleArrayReader(List<float[]> X, int k, int blur,
+//			int decoderMultiplier, int numProjections) {
+//
+//		this.randomSeed = DEFAULT_NUM_RANDOM_SEED;
+//		this.hashmod = DEFAULT_HASH_MODULUS;
+//		this.dec = new MultiDecoder(this.decoderMultiplier*DEFAULT_INNER_DECODER.getDimensionality(),DEFAULT_INNER_DECODER);
+//		this.numProjections = numProjections;
+//		this.numBlur = blur;
+//		this.decoderMultiplier = decoderMultiplier;
+//		data = X;
+//		if(data!=null)
+//			this.dim = data.get(0).length;
+//		else 
+//			this.dim = null;
+//		this.k = k;
+//		this.centroids = new ArrayList<Centroid>();
+//		this.topIDs = new ArrayList<Long>();
+//		for (int i = 0; i < k; i++)
+//			topIDs.add((long) 0);
+//		this.decayrate = 0;
+//		this.dimparameter = DEFAULT_DIM_PARAMETER;
+//		this.clusterer = DEFAULT_OFFLINE_CLUSTERER;
+//	}
+
+	public SimpleArrayReader() {
+		this.randomSeed = new Random().nextLong();
 		this.hashmod = DEFAULT_HASH_MODULUS;
+		this.decoderMultiplier = DEFAULT_NUM_DECODER_MULTIPLIER;
 		this.dec = new MultiDecoder(this.decoderMultiplier*DEFAULT_INNER_DECODER.getDimensionality(),DEFAULT_INNER_DECODER);
-		this.numProjections = numProjections;
-		this.numBlur = blur;
-		this.decoderMultiplier = decoderMultiplier;
-		data = X;
-		if(data!=null)
-			this.dim = data.get(0).length;
-		else 
-			this.dim = null;
-		this.k = k;
-		this.centroids = new ArrayList<float[]>();
+		this.numProjections = DEFAULT_NUM_PROJECTIONS;
+		this.numBlur = DEFAULT_NUM_BLUR;
+		this.centroids = new ArrayList<Centroid>();
 		this.topIDs = new ArrayList<Long>();
-		for (int i = 0; i < k; i++)
-			topIDs.add((long) 0);
 		this.decayrate = 0;
+		this.dimparameter = DEFAULT_DIM_PARAMETER;
+		this.clusterer = DEFAULT_OFFLINE_CLUSTERER;
+		this.projector = DEFAULT_PROJECTOR;
 	}
 
 	public Iterator<float[]> getVectorIterator() {
-		List<float[]> dataAsListofFloatArray = new ArrayList<float[]>();
-		List<List<Float>> datasetAsList = dataset.take((int) dataset.count());
-		for (List<Float> vectorAsList : datasetAsList) {
-			float[] vectorAsArray = new float[vectorAsList.size()];
-			for(int i = 0; i < vectorAsList.size(); i++)
-				vectorAsArray[i] = vectorAsList.get(i);
-			dataAsListofFloatArray.add(vectorAsArray);
-		}
-		return dataAsListofFloatArray.iterator();
+		return data.iterator();
 	}
 
 	@Override
@@ -176,10 +215,6 @@ public class SimpleArrayReader implements RPHashObject {
 		if(this.dim==null)
 			this.dim = data.get(0).length;
 		return dim;
-	}
-	
-	public void setdim(int dim) {
-		this.dim = dim;
 	}
 
 	public long getHashmod() {
@@ -197,17 +232,17 @@ public class SimpleArrayReader implements RPHashObject {
 	}
 
 	@Override
-	public void addCentroid(float[] v) {
+	public void addCentroid(Centroid v) {
 		centroids.add(v);
 	}
 
 	@Override
-	public void setCentroids(List<float[]> l) {
+	public void setCentroids(List<Centroid> l) {
 		centroids = l;
 	}
 
 	@Override
-	public List<float[]> getCentroids() {
+	public List<Centroid> getCentroids() {
 		return centroids;
 	}
 
@@ -263,13 +298,11 @@ public class SimpleArrayReader implements RPHashObject {
 		ret+=", Blur:"+numBlur;
 		ret+=", Projections:"+numProjections;
 		ret+=", Outer Decoder Multiplier:"+decoderMultiplier;
+		ret += ", Offline Clusterer:";
+		ret += clusterer==null?"none":clusterer.getClass().getName();
 		return ret;
 	}
 
-	@Override
-	public void setVariance(List<float[]> data) {
-		dec.setVariance(StatTests.varianceSample(data, .01f));
-	}
 
 	@Override
 	public Decoder getDecoderType() {
@@ -297,7 +330,18 @@ public class SimpleArrayReader implements RPHashObject {
 		return parallel;
 	}
 	
-	List<Float> counts;
+	@Override
+	public void setDimparameter(int parseInt) {
+		this.dimparameter = parseInt;
+		
+	}
+
+	@Override
+	public int getDimparameter() {
+
+		return this.dimparameter;
+	}
+
 	@Override
 	public void setCounts(List<Float> counts) {
 
@@ -309,6 +353,53 @@ public class SimpleArrayReader implements RPHashObject {
 		return counts;
 	}
 
+	@Override
+	public void setOfflineClusterer(Clusterer agglomerative3) {
+		this.clusterer = agglomerative3;
+	}
 
+	@Override
+	public Clusterer getOfflineClusterer() {
+		return this.clusterer;
+	}
 
+	public List<float[]> getRawData() {
+		return data;
+	}
+
+	@Override
+	public void setK(int getk) {
+		this.k = getk;
+		for (int i = 0; i < this.k; i++)
+			topIDs.add((long) 0);
+	}
+
+	@Override
+	public void setRawData(List<float[]> c) {
+		this.data = c;
+	}
+
+	@Override
+	public void addRawData(float[] centroid) {
+		if(data==null)data=new ArrayList<>();
+		data.add(centroid);
+	}
+
+	@Override
+	public void setNormalize(boolean parseBoolean) {
+		this.normalize = parseBoolean;		
+	}
+	
+	public boolean getNormalize() {
+		return this.normalize;		
+	}
+
+	@Override
+	public void setProjectionType(Projector dbFriendlyProjection) {
+		this.projector = dbFriendlyProjection;
+	}
+	@Override
+	public Projector getProjectionType(){
+		return this.projector;
+	}
 }

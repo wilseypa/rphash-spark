@@ -1,4 +1,4 @@
-package edu.uc.rphash;
+/*package edu.uc.rphash;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -71,10 +71,10 @@ public class RPHash3Stage implements Clusterer {
 
 	}
 
-	/*
+	
 	 * This step is temporary for testing, it should be performed during the
 	 * reduce phase 1.
-	 */
+	 
 	public RPHashObject mapP2() {
 		Iterator<float[]> vecs = so.getVectorIterator();
 		if (!vecs.hasNext())
@@ -235,3 +235,4 @@ public class RPHash3Stage implements Clusterer {
 		return so;
 	}
 }
+*/

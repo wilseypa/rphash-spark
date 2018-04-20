@@ -15,10 +15,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
+import edu.uc.rphash.Centroid;
 import edu.uc.rphash.projections.Projector;
 
 public class VectorUtil {
@@ -82,6 +85,27 @@ public class VectorUtil {
 		float tmp;
 		for (int i = 1; i < DB.size(); i++) {
 			tmp = distance(x, DB.get(i));
+			if (tmp <= mindist) {
+				mindist = tmp;
+				minindex = i;
+			}
+		}
+		return minindex;
+	}
+
+	/**
+	 * Linear search for x's nearest neighbor in DB
+	 * 
+	 * @param x
+	 * @param DB
+	 * @return
+	 */
+	public static int findNearestDistance(Centroid x, List<Centroid> DB) {
+		float mindist = distance(x.centroid(), DB.get(0).centroid());
+		int minindex = 0;
+		float tmp;
+		for (int i = 1; i < DB.size(); i++) {
+			tmp = distance(x.centroid(), DB.get(i).centroid());
 			if (tmp <= mindist) {
 				mindist = tmp;
 				minindex = i;
@@ -179,6 +203,7 @@ public class VectorUtil {
 		} else {
 			for (int i = 0; i < mat.size(); i++) {
 				prettyPrint(mat.get(i));
+				System.out.print("\n");
 			}
 		}
 	}
@@ -190,6 +215,37 @@ public class VectorUtil {
 	 */
 	public static void prettyPrint(Integer[] mat) {
 		int n = mat.length;
+		boolean curtailm = n > 10;
+		if (curtailm) {
+			for (int i = 0; i < 4; i++) {
+				if (mat[i] > 0)
+					System.out.printf(" ");
+				System.out.printf("%d ", mat[i]);
+			}
+			System.out.print("\t ... \t");
+			for (int i = mat.length - 4; i < mat.length; i++) {
+				if (mat[i] > 0)
+					System.out.printf(" ");
+				System.out.printf("%d ", mat[i]);
+			}
+		} else {
+			for (int i = 0; i < mat.length; i++) {
+				if (mat[i] > 0)
+					System.out.printf(" ");
+				System.out.printf("%d ", mat[i]);
+			}
+		}
+		System.out.printf("\n");
+	}
+
+	/**
+	 * Print a vector, compress if the output is too big
+	 * 
+	 * @param mat
+	 */
+	public static void prettyPrint(float[] mat) {
+		int n = mat.length;
+
 		boolean curtailm = n > 10;
 		if (curtailm) {
 			for (int i = 0; i < 4; i++) {
@@ -210,7 +266,7 @@ public class VectorUtil {
 				System.out.printf("%.4f ", mat[i]);
 			}
 		}
-		System.out.printf("\n");
+		// System.out.printf("\n");
 	}
 
 	/**
@@ -218,7 +274,7 @@ public class VectorUtil {
 	 * 
 	 * @param mat
 	 */
-	public static void prettyPrint(float[] mat) {
+	public static void prettyPrint(double[] mat) {
 		int n = mat.length;
 
 		boolean curtailm = n > 10;
@@ -273,11 +329,48 @@ public class VectorUtil {
 			aligned.add(new float[0]);
 
 		for (float[] estCentroid : estCentroids) {
-			int index = VectorUtil
-					.findNearestDistance(estCentroid, realCentroids);
+			int index = VectorUtil.findNearestDistance(estCentroid,
+					realCentroids);
 			aligned.set(index, estCentroid);
 		}
 		return aligned;
+	}
+
+	/**
+	 * write a simple matrix format of row[newline] col[newline]
+	 * data_1_1[newline] ...[newline] data_||row||_||col||
+	 * 
+	 * @param data
+	 *            - list of float arrays
+	 * @param output
+	 *            - file
+	 */
+	public static void writeCentroidsToFile(File output, List<Centroid> data,
+			boolean raw) {
+		try {
+			if (!raw) {
+				BufferedWriter out = new BufferedWriter(new FileWriter(output));
+				out.write(String.valueOf(data.size()) + "\n");
+				out.write(String.valueOf(data.get(0).centroid().length) + "\n");
+				for (Centroid vector : data) {
+					for (float v : vector.centroid())
+						out.write(String.valueOf(v) + "\n");
+				}
+				out.close();
+			} else {
+				DataOutputStream out = new DataOutputStream(
+						new BufferedOutputStream(new FileOutputStream(output)));
+				out.writeInt(data.size());
+				out.writeInt(data.get(0).centroid().length);
+				for (Centroid vector : data) {
+					for (float v : vector.centroid())
+						out.writeFloat(v);
+				}
+				out.close();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -312,6 +405,20 @@ public class VectorUtil {
 				}
 				out.close();
 			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public static void writeVectorFile(File output, List<Long> data) {
+		try {
+			BufferedWriter out = new BufferedWriter(new FileWriter(output));
+			out.write(String.valueOf(data.size()) + "\n");
+			out.write("1\n");
+			for (Long value : data) {
+				out.write(String.valueOf(value) + "\n");
+			}
+			out.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -362,6 +469,16 @@ public class VectorUtil {
 		return s;
 	}
 
+	private static final Pattern DOUBLE_PATTERN = Pattern
+			.compile("[\\x00-\\x20]*[+-]?(NaN|Infinity|((((\\p{Digit}+)(\\.)?((\\p{Digit}+)?)"
+					+ "([eE][+-]?(\\p{Digit}+))?)|(\\.((\\p{Digit}+))([eE][+-]?(\\p{Digit}+))?)|"
+					+ "(((0[xX](\\p{XDigit}+)(\\.)?)|(0[xX](\\p{XDigit}+)?(\\.)(\\p{XDigit}+)))"
+					+ "[pP][+-]?(\\p{Digit}+)))[fFdD]?))[\\x00-\\x20]*");
+
+	public static boolean isFloat(String s) {
+		return DOUBLE_PATTERN.matcher(s).matches();
+	}
+
 	public static List<float[]> readASCIIFile(BufferedReader in)
 			throws FileNotFoundException, IOException {
 
@@ -372,8 +489,15 @@ public class VectorUtil {
 			M = new ArrayList<float[]>(m);
 			for (int i = 0; i < m; i++) {
 				float[] vec = new float[n];
-				for (int j = 0; j < n; j++)
-					vec[j] = Float.parseFloat(in.readLine());
+				for (int j = 0; j < n; j++) {
+					String s = in.readLine();
+					if (s != null) {
+						if (isFloat(s))
+							vec[j] = Float.parseFloat(s);
+						else
+							vec[j] = Integer.parseInt(s);
+					}
+				}
 				M.add(vec);
 			}
 		} catch (IOException e) {
@@ -419,6 +543,81 @@ public class VectorUtil {
 		in.close();
 		return M;
 	}
+	
+	public static List<float[]> readW2VFile(File f)
+			throws FileNotFoundException, IOException {
+		DataInputStream in;
+		if(f.getName().endsWith(".gz")){
+			in = new DataInputStream(new GZIPInputStream(new FileInputStream(f)));
+		}else{
+			in = new DataInputStream(new FileInputStream(f));
+		}
+
+		List<float[]> M = null;
+		try {
+			
+			char c = (char)in.readUnsignedByte();
+			String strm = "";
+			while( c!=' ' ){
+				strm+=c;
+				c = (char)in.readUnsignedByte();
+			}
+			
+			c = (char)in.readUnsignedByte();
+			String strn = "";
+			while( c!='\n' ){
+				strn+=c;
+				c = (char)in.readUnsignedByte();
+			}
+			
+			int m = Integer.parseInt(strm);
+			int n = Integer.parseInt(strn);
+			System.out.println(strm + "x" + strn + c);
+			
+			M = new ArrayList<float[]>(m);
+			for (int i = 0; i < m; i++) {
+				
+				//the word header, uncomment if we care about the word
+				c = (char)in.readUnsignedByte();
+				//strm = "";
+				while( c!=' ' ){
+					//strm+=c;
+					c = (char)in.readUnsignedByte();
+				}
+
+//				if(i%((int)(m/1000.0))==0)
+//					System.out.printf("%.2f%% \n",100*(i/(float)m ));
+
+				float[] vec = new float[n];
+				
+				for (int j = 0; j < n; j++){
+					byte[] buffer = new byte[4];
+					in.read(buffer);
+					vec[j] = Float.intBitsToFloat((buffer[3]<<24 )+(buffer[2]<<16)+(buffer[1] << 8)+buffer[0]);
+				}
+				
+				M.add(vec);
+				
+				//the newline
+				c = (char)in.readUnsignedByte();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		if (in != null) {
+			try {
+				in.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		in.close();
+		return M;
+	}
+	
+	public static void main(String[] args) throws FileNotFoundException, IOException{
+		readW2VFile(new File("/home/lee/Desktop/wikipedia-pubmed-and-PMC-w2v.bin"));
+		}
 
 	/**
 	 * Read a simple matrix format of row[newline] col[newline]
@@ -431,7 +630,14 @@ public class VectorUtil {
 	 */
 	public static List<float[]> readFile(String infile, boolean raw)
 			throws FileNotFoundException, IOException {
+		
+		//support word to vec binary formats
+		if (infile.endsWith("bin.gz") || infile.endsWith("bin"))
+			return readW2VFile(new File(infile));
+		
 		InputStream freader;
+		
+		
 		if (infile.endsWith("gz"))
 			freader = new GZIPInputStream(new FileInputStream(infile));
 		else
@@ -472,15 +678,23 @@ public class VectorUtil {
 			b >>>= 8;
 			chnk = (byte) (b & 0xFF);
 		}
-		System.out.println();
+	}
+
+	public static String getBin(long b, int l) {
+		String ret = "";
+		byte chnk = (byte) (b & 0xFF);
+		for (int i = 0; i < l; i++) {
+			ret = ret + " " + b2s(chnk);
+			b >>>= 8;
+			chnk = (byte) (b & 0xFF);
+		}
+		return ret;
 	}
 
 	public static void prettyPrint(char[] b) {
 		for (int i = 0; i < b.length; i++) {
 			System.out.print(b2s((byte) b[i]) + ",");
 		}
-		System.out.println();
-
 	}
 
 	/**
@@ -558,24 +772,84 @@ public class VectorUtil {
 
 	public static float sum(float[] x) {
 		double ret = 0.0;
-		for(float xx : x) ret+=xx;
-		return (float)ret;
+		for (float xx : x)
+			ret += xx;
+		return (float) ret;
 	}
-	
+
 	public static float[] dot(float[] x, float[] y) {
-		if(x.length!=y.length) return null;
+		if (x.length != y.length)
+			return null;
 		float[] ret = new float[x.length];
-		for(int i = 0;i<x.length;i++)ret[i] = x[i]*y[i];
+		for (int i = 0; i < x.length; i++)
+			ret[i] = x[i] * y[i];
 		return ret;
 	}
-	
+
 	public static float dotSum(float[] x, float[] y) {
-		if(x.length!=y.length) return 0.0f;
+		if (x.length != y.length)
+			return 0.0f;
 		double ret = 0.0;
-		for(int i = 0;i<x.length;i++)ret+= x[i]*y[i];
-		return (float )ret;
+		for (int i = 0; i < x.length; i++)
+			ret += x[i] * y[i];
+		return (float) ret;
 	}
-	
-	
+
+	public static void simpleSave(int[][] M, String name) {
+		try {
+			BufferedWriter out = new BufferedWriter(new FileWriter(new File(
+					name)));
+			for (int[] vector : M) {
+				for (int v : vector)
+					out.write(String.valueOf(v) + ',');
+				out.write("\n");
+			}
+			out.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public static String longToString(Long b) {
+		byte chnk = (byte) (b & 0xFF);
+		String s = "";
+		for (int i = 0; i < 8; i++) {
+			s += b2s(chnk);
+			b >>>= 8;
+			chnk = (byte) (b & 0xFF);
+		}
+		return s;
+	}
+
+	/**
+	 * This method attempts to resolve cluster mergers by an offline clustering
+	 * algorithm, for outputting labeled vector data. This method assume the
+	 * offline clustering steps associations follow nearest centroid assignment.
+	 * 
+	 * @param preOfflineCents
+	 *            - centroid vectors prior to offline step
+	 * @param postOfflineCents
+	 *            - centroid vectors after offline step
+	 * @return map of ID-to-ID, from the pre to post clustering
+	 */
+	public static HashMap<Long, Long> generateIDMap(
+			List<Centroid> preOfflineCents, List<Centroid> postOfflineCents) {
+
+		HashMap<Long, Long> ret = new HashMap<>();
+
+		// offline clusterers usually don't set ids
+		for (int vecid = 0; vecid < postOfflineCents.size(); vecid++) {
+			postOfflineCents.get(vecid).id = vecid;
+		}
+
+		for (int vecid = 0; vecid < preOfflineCents.size(); vecid++) {
+			Long key = preOfflineCents.get(vecid).id;
+
+			ret.put(key,
+					postOfflineCents.get(findNearestDistance(
+							preOfflineCents.get(vecid), postOfflineCents)).id);
+		}
+		return ret;
+	}
 
 }

@@ -1,4 +1,4 @@
-package edu.uc.rphash;
+/*package edu.uc.rphash;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -108,3 +108,4 @@ public class RPHashAltStream implements Clusterer, Runnable {
 	}
 
 }
+*/

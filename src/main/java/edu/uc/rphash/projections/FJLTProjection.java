@@ -1,14 +1,14 @@
-package edu.uc.rphash.projections;
+/*package edu.uc.rphash.projections;
 
 import java.util.Random;
 
 import edu.uc.rphash.util.VectorUtil;
 
-/**Work In Progress to implement the Fat Johnson Lindenstrauss transform
+*//**Work In Progress to implement the Fat Johnson Lindenstrauss transform
  * under the Walsh-Hadamard vector matrix transform
  * @author lee
  *
- */
+ *//*
 public class FJLTProjection implements Projector {
 	
 	int n;
@@ -46,7 +46,7 @@ public class FJLTProjection implements Projector {
 
 
 
-	/*
+	
 	 * Generates P matrix
 	 *
 	 * INPUT: size of distribution (k,d)
@@ -60,7 +60,7 @@ public class FJLTProjection implements Projector {
 	 *
 	 * q = min( ( e^p-2 * (log n)^p /d ), 1 )
 	 * p belongs to {1,2}
-	 */
+	 
 	float[] generatep(int n, int k, int d, float e, int p) {
 
 		float [] data = new float[k * d ];
@@ -88,7 +88,7 @@ public class FJLTProjection implements Projector {
 
 	}
 
-	/*
+	
 	 *  Normal Distribution
 	 *
 	 *  INPUT: Pointer to hold the distribution data
@@ -99,7 +99,7 @@ public class FJLTProjection implements Projector {
 	 *  Algorithm: Uses Moro's Inverse CND distribution to
 	 *  generate an arbitrary normal distribution with
 	 *  mean mu and variance var
-	 */
+	 
 	void inv_randn(float []data, int m, int n, float mu, float var){
 		
 		float sd = (float)Math.sqrt(var);
@@ -109,7 +109,7 @@ public class FJLTProjection implements Projector {
 		}
 	}
 
-/*
+
 *  Uniform Distribution
 *
 *  INPUT: Pointer to hold the distribution data
@@ -117,7 +117,7 @@ public class FJLTProjection implements Projector {
 *  OUTPUT: Matrix filled with uniform distribution
 *
 *  Algorithm: Nothing Special
-*/
+
 void randu(float []data, int m, int n) {
 
 	for (int i = 0; i < m; i++) {
@@ -129,7 +129,7 @@ void randu(float []data, int m, int n) {
 }
 
 
-	/*
+	
 	 * Generates diagnol matrix D
 	 *
 	 * INPUT: size of matrix d
@@ -139,7 +139,7 @@ void randu(float []data, int m, int n) {
 	 *
 	 * Returned as a vector with length d to avoid extra space
 	 * seems to be correct
-	 */
+	 
 	float[] generated(int d) {
 		float [] data = new float[d ];
 		int l,j;
@@ -204,9 +204,9 @@ void randu(float []data, int m, int n) {
 		// default is 0.0f memset(result, 0, k * n * sizeof(float));
 		//float sqrtd = 1 / sqrt(d);
 
-		/*
+		
 		 * Process each point at once i.e each column of data
-		 */
+		 
 		int curr = 0;
 		for(curr=0; curr < n; curr++) {
 			int startpoint = curr*d;
@@ -220,9 +220,9 @@ void randu(float []data, int m, int n) {
 				input[a+startpoint] *= D[a];
 	        }
 
-			/*
+			
 			 * Do Fast Walsh transform on the point
-			 */
+			 
 			int l2 = (int) (Math.log(d)/Math.log(2));
 			for (a = 0; a < l2; a++) {
 				for (b = 0; b < (1 << l2); b += (1 << (a + 1))) {
@@ -237,9 +237,9 @@ void randu(float []data, int m, int n) {
 				}
 			}
 
-			/*
+			
 			 * Multiply with P
-			 */
+			 
 			//matrix vector multiplication
 			// output <- alpha*A*x + y                   
 			//                  m  n   alpha    a  aidx   x   xidx       beta
@@ -265,9 +265,9 @@ void randu(float []data, int m, int n) {
 				input[a] *= D[a];
 	        }
 
-			/*
+			
 			 * Do Fast Walsh transform on the point
-			 */
+			 
 			int l2 = (int) (Math.log(d)/Math.log(2));
 			for (a = 0; a < l2; a++) {
 				for (b = 0; b < (1 << l2); b += (1 << (a + 1))) {
@@ -279,9 +279,9 @@ void randu(float []data, int m, int n) {
 				}
 			}
 
-			/*
+			
 			 * Multiply with P
-			 */
+			 
 			//matrix vector multiplication
 			// output <- alpha*A*x + y                   
 			//                  m  n   alpha    a  aidx   x   xidx       beta
@@ -385,3 +385,4 @@ void randu(float []data, int m, int n) {
 //	}
 
 }
+*/

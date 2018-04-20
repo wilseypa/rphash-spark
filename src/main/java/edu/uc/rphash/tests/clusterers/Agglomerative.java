@@ -1,4 +1,4 @@
-package edu.uc.rphash.tests.clusterers;
+/*package edu.uc.rphash.tests.clusterers;
 
 import java.util.List;
 
@@ -91,3 +91,4 @@ public class Agglomerative implements Clusterer{
 	
 
 }
+*/
